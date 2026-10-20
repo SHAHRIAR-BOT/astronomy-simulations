@@ -1,0 +1,21 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif">
+  <!-- Outer Card Background -->
+  <rect x="4" y="4" width="392" height="492" rx="24" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.8"/>
+
+  <!-- Simulation Title (Centered, No numbers) -->
+  <text x="200" y="52" text-anchor="middle" font-size="20" font-weight="700" fill="#0f172a">Life Cycle of a Star</text>
+
+  <!-- Inner QR Box -->
+  <rect x="60" y="76" width="280" height="280" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2"/>
+  
+  <!-- Embedded Vector QR Code -->
+  <svg x="74" y="90" width="252" height="252" viewBox="0 0 53 53" shape-rendering="crispEdges">
+    
+  </svg>
+
+  <!-- Call to action: Scan me to see simulation -->
+  <text x="200" y="405" text-anchor="middle" font-size="14.5" font-weight="600" fill="#334155">Scan me to see simulation</text>
+
+  <!-- Short Link -->
+  <text x="200" y="440" text-anchor="middle" font-family="'Courier New', Courier, monospace" font-size="14" font-weight="700" fill="#0d8a4e">tinyurl.com/astro-star-lifecycle</text>
+</svg>

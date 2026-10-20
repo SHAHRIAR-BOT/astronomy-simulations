@@ -1,0 +1,123 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Life Cycle of a Star – Simulation</title>
+<style>
+:root{color-scheme:dark;--bg:#070b16;--pan:#0f1626;--ln:#26324d;--tx:#e6ebf5;--mu:#93a0ba;--ac:#ffb454;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:"Segoe UI",system-ui,sans-serif}
+body{display:grid;grid-template-columns:1fr 360px;grid-template-rows:auto auto 1fr;height:100%}
+header,#tl{grid-column:1/3;padding:8px 12px;background:var(--pan);border-bottom:1px solid var(--ln);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+h1{font-size:15px;margin:0 8px 0 0;font-weight:600}
+button{font:inherit;color:var(--tx);background:#18223a;border:1px solid var(--ln);border-radius:16px;padding:5px 11px;font-size:13px;cursor:pointer}
+button:hover{border-color:var(--ac)}button.on{background:#2a3555;border-color:var(--ac)}button:focus-visible{outline:2px solid var(--ac)}
+#tl button{font-size:12px;padding:3px 9px}#rng{flex:1;min-width:140px;accent-color:#ffb454}
+.sep{width:1px;height:20px;background:var(--ln);margin:0 4px}
+#stage{position:relative;min-height:0}canvas{width:100%;height:100%;display:block}
+#hint{position:absolute;right:10px;top:8px;font-size:12px;color:var(--mu);pointer-events:none}
+aside{-webkit-overflow-scrolling:touch;background:var(--pan);border-left:1px solid var(--ln);overflow:auto;padding:14px}
+aside h2{margin:0;font-size:20px}.sub{color:var(--mu);font-size:13px;margin:4px 0 10px}
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:12px;color:#111;margin-right:6px;background:var(--ac)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin:10px 0;font-size:13.5px}dt{color:var(--mu)}dd{margin:0}
+.box{border:1px solid var(--ln);border-radius:8px;padding:9px 11px;margin:10px 0;font-size:13.5px;line-height:1.5}.box b{display:block;margin-bottom:3px}
+.note{color:var(--ac);font-size:12.5px;line-height:1.45}
+@media(max-width:760px){body{grid-template-columns:1fr;grid-template-rows:auto auto 50vh 1fr}header,#tl{grid-column:1}aside{-webkit-overflow-scrolling:touch;border-left:0;border-top:1px solid var(--ln)}h1{width:100%}}
+</style></head><body>
+<header><h1>Life Cycle of a Star – Simulation</h1><span id="paths"></span><span class="sep"></span><button id="bP"></button><button id="bS">Speed 1×</button></header>
+<div id="tl"></div>
+<div id="stage"><canvas id="cv"></canvas><div id="hint">Press Play, drag the timeline, or tap a stage</div></div>
+<aside id="info"></aside>
+<script>
+// Content follows the junior notes, Chapters 5–7. Drawings are schematic, not to scale.
+const S={
+nebula:{n:'Nebula – the cosmic nursery',sec:'5.1',dur:'Millions of years',z:'Millions of miles across',cap:'WHOOSH! A shockwave pushes the cloud',x:'A region of colorful clouds of gas and dust, mostly hydrogen. It is usually quiet and still, until a shockwave from a passing galaxy or an older exploded star gives it a big push.',k:['Nebula','A giant cloud of gas and dust in space where new stars are born.']},
+collapse:{n:'Gravity and collapse',sec:'5.2',dur:'Part of millions of years',z:'Shrinking from a cloud to a small ball',cap:'Gravity beats pressure: shrink, spin, flatten',x:'Gravity wakes up and wins the tug-of-war with pressure. The cloud shrinks and spins faster, like an ice skater pulling in their arms. The outside flattens into a disk where planets will form, and the center heats into a glowing “heart”.',k:['Gravity','The invisible force that pulls gas and dust tightly together to build a star.']},
+proto:{n:'Protostar',sec:'5.3 – 5.4',dur:'Millions of years',z:'Glowing core inside a dusty disk',T:[1e3,1.5e7],tt:'Thousands → 15 million °C',cap:'Protostar, protoplanetary disk and jets',x:'A star in training. It glows from friction and gravitational heating while dust traps the heat. A protoplanetary disk wraps around it and jets shoot from its top and bottom. It must reach 15 million °C; if it stalls, it becomes a Brown Dwarf.',k:['Protostar','A glowing, hot ball of gas that is still growing and has not yet become a true star.']},
+ignite:{n:'Nuclear fusion ignites',sec:'5.5',dur:'The moment of birth',z:'A stable, round sphere',T:[1.5e7,1.5e7],tt:'15 million °C',cap:'Fusion starts: gravity = outward pressure',x:'At 15 million °C hydrogen particles smash together and fuse into helium, releasing huge energy. Gravity and outward push balance (hydrostatic equilibrium), so the star stops shrinking. The solar wind then blows away the leftover dust and gas.',k:['Hydrostatic Equilibrium','The stable balance where the inward pull of gravity matches the outward push of fusion energy.']},
+main:{n:'Main Sequence',sec:'5.5 – 5.6, 7.7',dur:'About 90% of life · Sun ≈ 10 billion yrs · massive stars a few million yrs',z:'Sun-like: yellow · Massive: blue-white',T:[1.5e7,1.5e7],tt:'≈ 15 million °C (core)',cap:'Steadily turning hydrogen into helium',x:'The long, peaceful stage. The star burns hydrogen in its core. Our Sun is in this stage now, about 4.6 billion years old with around 5 billion years of fuel left. Stars at least 8 times heavier than the Sun burn blue-white and run out far sooner.',k:['Main Sequence','The long, stable and peaceful period of a star’s life where it steadily burns its fuel.']},
+redgiant:{n:'Red Giant',sec:'7.1 – 7.2',dur:'≈ 500 million years',z:'100 – 200× the Sun’s size',T:[1.5e7,1e8],tt:'Core up to 100 million °C',cap:'The Sun swallows Mercury and Venus',x:'The core’s hydrogen is gone and it collapses and heats. A hydrogen shell outside it ignites and pushes the outer layers out. The star swells and cools from yellow to deep red. Helium in the core begins to fuse into carbon.',k:['Red Giant','A late stage when the core runs out of hydrogen; the outer layers expand, cool and turn red.']},
+agb:{n:'Asymptotic Giant Branch (AGB)',sec:'7.3',dur:'≈ 100 million years',z:'Huge, pulsating',T:[1e8,1e8],tt:'≈ 100 million °C (core)',cap:'Pulsing and shedding gas and dust',x:'As helium fuel runs low the star becomes highly unstable. It pulsates violently and sheds its outer layers of gas and dust into space through strong stellar winds.',k:['AGB phase','A dramatic end-of-life struggle where the star pulses and loses its outer layers.']},
+pn:{n:'Planetary Nebula',sec:'7.3',dur:'10,000 – 50,000 years',z:'An expanding shell of glowing gas',cap:'The outer layers drift away; only the core remains',x:'The star’s gravity can no longer hold its outer layers, so they drift away as beautiful, glowing, expanding clouds. Only the very center of the star is left behind.',k:['Planetary Nebula','A glowing cloud of expanding gas created when a fragile Red Giant lets go of its outer layers.']},
+wd:{n:'White Dwarf',sec:'7.3',dur:'Billions of years of slow cooling',z:'About the size of Earth',cap:'Earth-sized, white-hot, slowly cooling',x:'The tiny, super-heavy leftover core. It burns no fuel and shines only from leftover heat. Its tightly jammed particles push back against gravity, keeping it stable. Sirius B and Procyon B are nearby examples.',w:'In a binary system a white dwarf can steal matter from its companion. Past the Chandrasekhar Limit (about 1.4 Suns) it explodes as a Type Ia supernova.',k:['White Dwarf','The tiny, incredibly hot, super-heavy core of a star like our Sun, about the size of Earth.']},
+bd:{n:'Black Dwarf (theoretical)',sec:'7.3',dur:'Trillions of years',z:'Earth-sized, cold and dark',cap:'Theoretical end: the universe is not old enough yet',x:'After a very, very long time the white dwarf loses all its heat and stops glowing. The universe is not old enough for any Black Dwarf to exist yet.',k:['Black Dwarf','The theoretical final resting state of a white dwarf, completely cold and dark.']},
+rsg:{n:'Red Supergiant',sec:'6.4, 7.4',dur:'The end of a short life',z:'Hundreds of times the Sun’s diameter',cap:'A massive star swells and reddens',x:'Massive stars (at least 8 times heavier than the Sun) burn fuel unbelievably fast and live only a few million years. Near the end they swell into Red Supergiants like Betelgeuse and Antares.',k:['Massive Star','A star at least eight times heavier than our Sun; the only places hot enough to forge heavy elements.']},
+onion:{n:'The onion core: fusion up to iron',sec:'6.2, 6.4',dur:'Final stage before collapse',z:'Layers of different elements',cap:'Iron takes energy away instead of releasing it',x:'Like a cosmic onion, each layer cooks different elements: helium into carbon, carbon into neon and oxygen, and deep down silicon and magnesium. Finally the core makes iron, which drains energy. Outward pressure fails.',k:['Radiation Pressure','The outward push of fusion energy that balances gravity and keeps the star from collapsing.']},
+sn:{n:'Supernova',sec:'6.5, 7.4',dur:'Core collapses in less than a second',z:'Can outshine its entire galaxy',cap:'Collapse, bounce, explosion, heavy elements',x:'The core collapses to a ball a few miles wide, the outer layers crash in, bounce, and tear the star apart. The heat forges gold, silver, platinum and uranium and scatters them with the iron and oxygen that become planets and people. The 1054 supernova left the Crab Nebula.',k:['Supernova','A blinding explosion at the end of a massive star’s life that blasts heavy elements across the galaxy.']},
+ns:{n:'Neutron Star and Pulsar',sec:'7.5',dur:'Stable remnant',z:'About 20 km wide, heavier than the Sun',cap:'A spinning neutron star: a pulsar',x:'If the leftover core is incredibly heavy, gravity crushes it into neutrons. A spoonful would weigh a billion tons. It spins hundreds of times a second, and beams of light sweep past Earth as flashes: a pulsar. The strongest magnets are magnetars.',k:['Pulsar','A rapidly spinning neutron star whose beams appear to flash quickly and regularly from Earth.']},
+bh:{n:'Black Hole',sec:'7.6',dur:'Stable remnant',z:'A point of zero size with a huge horizon',cap:'Nothing escapes, not even light',x:'If the star is much larger, nothing can stop the core crushing inward. Beyond the Event Horizon nothing returns. Falling objects are stretched (spaghettification). We detect black holes by stars orbiting empty space or by a glowing accretion disk.',k:['Event Horizon','The invisible “point of no return” around a black hole.']}
+};
+const COM=['nebula','collapse','proto','ignite','main'];
+const PATHS={sun:[[...COM,'redgiant','agb','pn','wd','bd'],'Sun-like star'],mass:[[...COM,'rsg','onion','sn','ns'],'Massive → neutron star'],vmass:[[...COM,'rsg','onion','sn','bh'],'Very massive → black hole']};
+let path='sun',L=PATHS.sun[0],u=0,play=true,spd=1,cur=-1,W,H,cx,cy,R,last=0;
+const $=id=>document.getElementById(id),cv=$('cv'),g=cv.getContext('2d'),rng=document.createElement('input');
+let seed=11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const P=Array.from({length:170},()=>[rnd()*6.283,rnd(),rnd(),rnd()]),BG=Array.from({length:220},()=>[rnd(),rnd(),rnd()*1.2+.3,rnd()]);
+const lerp=(a,b,t)=>a+(b-a)*t,mix=(a,b,t)=>a.map((v,i)=>lerp(v,b[i],t)),rgb=(c,a=1)=>`rgba(${c.map(Math.round).join()},${a})`;
+const glow=(x,y,r,c,a=1)=>{const q=g.createRadialGradient(x,y,0,x,y,Math.max(r,.1));q.addColorStop(0,rgb(c,a));q.addColorStop(1,rgb(c,0));g.fillStyle=q;g.beginPath();g.arc(x,y,r,0,7);g.fill()};
+const dot=(x,y,r,c,a=1)=>{g.fillStyle=rgb(c,a);g.beginPath();g.arc(x,y,r,0,7);g.fill()};
+const txt=(s,x,y,c='#aebbd6',al='center',f='12px Segoe UI,sans-serif')=>{g.fillStyle=c;g.font=f;g.textAlign=al;g.fillText(s,x,y)};
+const ring=(r,c,a,w=2)=>{g.strokeStyle=rgb(c,a);g.lineWidth=w;g.beginPath();g.arc(cx,cy,r,0,7);g.stroke()};
+const EARTH=[90,160,255],ROCK=[210,190,160];
+const F={
+nebula(t,s){[[255,90,160],[60,200,220],[255,160,70],[150,100,255],[80,140,255]].forEach((c,i)=>{const a=i*1.3+s*.08;glow(cx+Math.cos(a)*R*.55,cy+Math.sin(a*1.1)*R*.4,R*(.7+.08*(i%3)),c,.38)});
+ P.forEach(p=>dot(cx+(p[1]-.5)*R*2.6*Math.cos(p[0]),cy+(p[1]-.5)*R*2*Math.sin(p[0]),p[3]*1.6+.4,[255,255,255],.5+.4*Math.sin(s*2+p[0]*9)));
+ if(t>.6){const k=(t-.6)/.4;ring(R*(.2+k*1.5),[255,255,255],1-k,3);if(k<.6)txt('WHOOSH!',cx,cy-R*.1,'#fff','center','bold 26px Segoe UI')}},
+collapse(t,s){const rr=R*(1.05-.8*t),fl=1-.72*t*t;glow(cx,cy,rr*1.2,[255,140,90],.25+.2*t);
+ P.forEach(p=>{const a=p[0]+s*(.3+3.5*t)*(1.6-p[1]),r=rr*(.15+p[1]*.85);dot(cx+Math.cos(a)*r,cy+Math.sin(a)*r*fl,1+p[3]*1.6,mix([170,190,255],[255,170,90],t),.8)});
+ glow(cx,cy,R*(.05+.2*t),[255,200,120],.4+.6*t)},
+proto(t,s){glow(cx,cy,R*.95,[40,20,20],.5);const jl=R*(.3+.6*t);
+ [-1,1].forEach(d=>{const q=g.createLinearGradient(0,cy,0,cy+d*jl);q.addColorStop(0,'rgba(120,220,255,.8)');q.addColorStop(1,'rgba(120,220,255,0)');g.fillStyle=q;g.fillRect(cx-4-3*Math.sin(s*6),cy,8,d*jl)});
+ P.forEach(p=>{const r=R*(.22+.7*p[1]),a=p[0]+s*1.4/(p[1]+.35);dot(cx+Math.cos(a)*r,cy+Math.sin(a)*r*.22,1+p[3]*1.5,[200,140,90],.75)});
+ glow(cx,cy,R*(.18+.06*t),mix([200,60,40],[255,190,90],t));dot(cx,cy,R*.09,mix([255,120,60],[255,230,170],t))},
+ignite(t,s){const f=Math.exp(-Math.pow((t-.22)*9,2));if(t<.7)glow(cx,cy,R*.95,[40,20,20],.55*(1-t/.7));
+ if(t>.2)P.forEach(p=>{const k=(p[1]+(t-.2)*1.3)%1,r=R*(.25+k*.8);dot(cx+Math.cos(p[0])*r,cy+Math.sin(p[0])*r,1.2+p[3],[255,230,160],1-k)});
+ glow(cx,cy,R*(.35+1.1*f),[255,250,220],.6+.4*f);dot(cx,cy,R*.17,[255,245,200])},
+main(t,s){const m=path!='sun',r=R*(m?.3:.22),c=m?[160,195,255]:[255,215,110];glow(cx,cy,r*3.2+3*Math.sin(s*2),c,.35);dot(cx,cy,r,mix(c,[255,255,255],.35));
+ if(!m)[[.45,1.6],[.7,1.1],[.95,.7]].forEach(([o,v],i)=>{const a=s*v+i*2;ring(R*o,[255,255,255],.12,1);dot(cx+Math.cos(a)*R*o,cy+Math.sin(a)*R*o,i==2?4:3,i==2?EARTH:ROCK)});
+ const bx=cx-R*.6,by=cy+R*1.08,bw=R*1.2;g.fillStyle='#26324d';g.fillRect(bx,by,bw,8);g.fillStyle='#ffb454';g.fillRect(bx,by,bw*(1-t),8);txt('Core hydrogen fuel: '+Math.round((1-t)*100)+'%',cx,by+24)},
+redgiant(t,s){const r=R*(.2+.75*t),c=mix([255,210,110],[215,55,30],Math.min(1,t*1.4));
+ [[.4,'Mercury'],[.62,'Venus'],[1.02,'Earth']].forEach(([o,n],i)=>{ring(R*o,[255,255,255],.12,1);if(r<R*o){const a=s*(1.5-i*.4)+i,x=cx+Math.cos(a)*R*o,y=cy+Math.sin(a)*R*o;dot(x,y,i==2?4:3,i==2?EARTH:ROCK);txt(n,x+6,y-6,'#93a0ba','left','11px Segoe UI')}});
+ glow(cx,cy,r*1.7,c,.3);dot(cx,cy,r,c);glow(cx,cy,r*.45,[255,150,90],.5);dot(cx,cy,R*.035,[255,255,255])},
+agb(t,s){const r=R*(.95+.07*Math.sin(s*5)),c=[225,60+20*Math.sin(s*5),35];
+ P.forEach(p=>{const k=(p[1]+s*.12+p[3])%1,d=r*(1+k*.9);dot(cx+Math.cos(p[0])*d,cy+Math.sin(p[0])*d,1.5+p[3]*2,[255,170,120],(1-k)*.8)});
+ glow(cx,cy,r*1.6,c,.3);dot(cx,cy,r,c);glow(cx,cy,r*.4,[255,170,90],.5);dot(cx,cy,R*.04,[255,255,255])},
+pn(t,s){[[0,[90,200,230]],[.22,[255,120,170]],[.45,[255,170,80]]].forEach(([d,c])=>ring(R*(.15+Math.max(0,t*1.1-d)*.9),c,.55,R*.08));
+ glow(cx,cy,R*1.1*(.3+t*.7),[120,200,230],.18);glow(cx,cy,R*.18,[200,230,255],.9);dot(cx,cy,R*.03,[255,255,255])},
+wd(t,s){const c=mix([210,235,255],[255,235,190],t);glow(cx,cy,R*.3,c,.5);dot(cx,cy,R*.045,c);dot(cx+R*.45,cy,R*.045,EARTH);txt('Earth',cx+R*.45,cy+R*.14);txt('White dwarf',cx,cy+R*.14,'#8fd3ff')},
+bd(t,s){glow(cx,cy,R*.2,[120,120,140],.12*(1-t));dot(cx,cy,R*.045,[30,32,44]);ring(R*.045,[90,95,120],.6,1);txt('Black dwarf (theoretical)',cx,cy+R*.14)},
+rsg(t,s){const r=R*(.55+.4*t);glow(cx,cy,r*1.6,[255,90,60],.28);dot(cx,cy,r,[200,50,35]);
+ for(let i=0;i<9;i++){const a=i*2.4+s*.15,d=r*(.2+.55*((i*37%10)/10));glow(cx+Math.cos(a)*d,cy+Math.sin(a)*d,r*.3,[255,150,80],.55)}txt('e.g. Betelgeuse, Antares',cx,cy+r+22)},
+onion(t,s){[['H',[200,90,70]],['He',[230,150,90]],['C',[200,200,110]],['Ne · O',[110,200,170]],['Si · Mg',[110,150,230]],['Fe',[230,230,240]]].forEach(([n,c],i)=>{
+ const f=[1,.8,.62,.46,.32,.2][i]*(i==5?.7+.3*t:1)*(1+.012*Math.sin(s*4+i));dot(cx,cy,R*f,c,.9);txt(n,cx+R*f-4,cy+(i%2?14:-4),'#111','right','bold 11px Segoe UI')})},
+sn(t,s){if(t<.25){const k=t/.25;dot(cx,cy,R*(.9-.8*k*k),[220,60,40]);glow(cx,cy,R*.5,[255,120,80],.4*k)}
+ else{const k=(t-.25)/.75,f=Math.exp(-k*6);glow(cx,cy,R*(.3+2.2*f),[255,255,255],.9*f);
+  P.forEach((p,i)=>dot(cx+Math.cos(p[0])*R*(.1+k*(.5+p[1]*1.1)),cy+Math.sin(p[0])*R*(.1+k*(.5+p[1]*1.1)),1.5+p[3]*2.5,i%4==0?[255,215,70]:i%4==1?[220,230,240]:[255,150,90],1-k*.7));
+  ring(R*(.1+k*1.6),[255,200,140],(1-k)*.7,4);if(k>.3)txt('Gold · silver · platinum · iron · oxygen',cx,cy+R*1.15,'#ffd166')}},
+ns(t,s){glow(cx,cy,R*1.1,[255,140,120],.12);const a=s*5;g.strokeStyle='rgba(150,220,255,.6)';g.lineWidth=5;g.lineCap='round';
+ [0,Math.PI].forEach(d=>{g.beginPath();g.moveTo(cx,cy);g.lineTo(cx+Math.cos(a+d)*R*1.2,cy+Math.sin(a+d)*R*1.1);g.stroke()});
+ glow(cx,cy,R*.2,[170,220,255],.8);dot(cx,cy,R*.05,[230,245,255]);txt('≈ 20 km wide',cx,cy+R*.2)},
+bh(t,s){P.forEach(p=>{const r=R*(.2+p[1]*.7),a=p[0]+s*2/(p[1]+.3);dot(cx+Math.cos(a)*r,cy+Math.sin(a)*r*.25,1+p[3]*1.8,mix([255,230,160],[255,110,50],p[1]),.9)});
+ dot(cx,cy,R*.17,[0,0,0]);ring(R*.17,[255,200,120],.8);txt('Event Horizon',cx,cy+R*.32)}
+};
+const fmt=x=>x>=1e6?Math.round(x/1e6)+' million °C':Math.round(x/100)*100>=1e3?(Math.round(x/100)*100).toLocaleString()+' °C':Math.round(x)+' °C';
+function frame(ts){const dt=Math.min(.1,(ts-last)/1000);last=ts;
+ if(play){u+=dt*spd/(L.length*9);if(u>=1){u=.9999;play=false;btn()}}
+ const N=L.length,i=Math.min(N-1,Math.floor(u*N)),t=u*N-i,k=S[L[i]];if(i!=cur){cur=i;info()}
+ g.fillStyle='#070b16';g.fillRect(0,0,W,H);BG.forEach(b=>{g.globalAlpha=.25+b[3]*.5;g.fillStyle='#cfd8ee';g.fillRect(b[0]*W,b[1]*H,b[2],b[2])});g.globalAlpha=1;
+ F[L[i]](t,ts/1000);g.lineCap='butt';
+ txt(k.n,14,24,'#e6ebf5','left','600 15px Segoe UI');if(k.T)txt('Core temperature ≈ '+fmt(k.T[0]*Math.pow(k.T[1]/k.T[0],t)),14,44,'#ffb454','left','13px Segoe UI');
+ txt(k.cap,W/2,H-14,'#aebbd6');if(document.activeElement!=rng)rng.value=u*1000;requestAnimationFrame(frame)}
+function info(){const k=S[L[cur]];[...document.querySelectorAll('#tl [data-i]')].forEach(b=>b.classList.toggle('on',+b.dataset.i==cur));
+ $('info').innerHTML=`<h2>${k.n}</h2><div class="sub"><span class="badge">${PATHS[path][1]}</span>Stage ${cur+1} of ${L.length} · Notes §${k.sec}</div>
+ <dl><dt>Duration</dt><dd>${k.dur}</dd><dt>Size</dt><dd>${k.z}</dd>${k.tt?`<dt>Core temp</dt><dd>${k.tt}</dd>`:''}</dl>
+ <div class="box"><b>What happens</b>${k.x}</div><div class="box"><b>Key term: ${k.k[0]}</b>${k.k[1]}</div>${k.w?`<div class="note">${k.w}</div>`:''}<div class="note">Schematic animation, not to scale.</div>`}
+function build(){const tl=$('tl');tl.innerHTML='';L.forEach((id,i)=>{const b=document.createElement('button');b.textContent=(i+1)+'. '+S[id].n.split(' (')[0].split(':')[0];b.dataset.i=i;b.onclick=()=>{u=(i+.001)/L.length;play=false;btn()};tl.append(b)});tl.append(rng)}
+function setPath(p){path=p;L=PATHS[p][0];u=0;cur=-1;play=true;build();btn();[...document.querySelectorAll('#paths button')].forEach(b=>b.classList.toggle('on',b.dataset.p==p))}
+const btn=()=>$('bP').textContent=play?'❚❚ Pause':'▶ Play';
+for(const[p,v]of Object.entries(PATHS)){const b=document.createElement('button');b.textContent=v[1];b.dataset.p=p;b.onclick=()=>setPath(p);$('paths').append(b)}
+rng.type='range';rng.id='rng';rng.min=0;rng.max=999;rng.oninput=()=>{u=rng.value/1000;play=false;btn()};
+$('bP').onclick=()=>{if(!play&&u>=.999)u=0;play=!play;btn()};
+$('bS').onclick=e=>{spd=spd==1?2:spd==2?.5:1;e.target.textContent='Speed '+spd+'×'};
+function resize(){const d=devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=W*d;cv.height=H*d;g.setTransform(d,0,0,d,0,0);cx=W/2;cy=H/2-8;R=Math.min(W,H)*.34}
+addEventListener('resize',resize);resize();setPath('sun');requestAnimationFrame(frame);
+</script></body></html>
