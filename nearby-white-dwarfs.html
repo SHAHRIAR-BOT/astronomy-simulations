@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Nearby White Dwarfs – Sky Locator</title>
+<style>
+:root{color-scheme:dark;--bg:#070b16;--pan:#0f1626;--ln:#26324d;--tx:#e6ebf5;--mu:#93a0ba;--ac:#ffb454;--wd:#8fd3ff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:"Segoe UI",system-ui,sans-serif}
+body{display:grid;grid-template-columns:1fr 360px;grid-template-rows:auto 1fr;height:100%}
+header{grid-column:1/3;padding:8px 12px;background:var(--pan);border-bottom:1px solid var(--ln);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+h1{font-size:15px;margin:0 8px 0 0;font-weight:600}
+button{font:inherit;color:var(--tx);background:#18223a;border:1px solid var(--ln);border-radius:16px;padding:5px 11px;font-size:13px;cursor:pointer}
+button:hover{border-color:var(--ac)}button.on{background:#2a3555;border-color:var(--ac)}button:focus-visible{outline:2px solid var(--ac)}
+.sep{width:1px;height:20px;background:var(--ln);margin:0 4px}
+#stage{position:relative;min-height:0}canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#hint{position:absolute;right:10px;bottom:8px;font-size:12px;color:var(--mu);pointer-events:none}
+aside{background:var(--pan);border-left:1px solid var(--ln);overflow:auto;padding:14px}
+aside h2{margin:0;font-size:20px}.sub{color:var(--mu);font-size:13px;margin:2px 0 10px}
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:12px;color:#111;margin-right:6px;background:var(--wd)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin:10px 0;font-size:13.5px}dt{color:var(--mu)}dd{margin:0}
+.box{border:1px solid var(--ln);border-radius:8px;padding:9px 11px;margin:10px 0;font-size:13.5px;line-height:1.5}
+.box b{display:block;margin-bottom:3px}.note{color:var(--ac);font-size:12.5px;line-height:1.45}
+.cs{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.cs button{font-size:12px;padding:3px 9px}
+@media(max-width:760px){body{grid-template-columns:1fr;grid-template-rows:auto 52vh 1fr}header{grid-column:1}aside{border-left:0;border-top:1px solid var(--ln)}h1{width:100%}}
+</style></head><body>
+<header><h1>Nearby White Dwarfs – Sky Locator</h1><span id="stars"></span><span class="sep"></span><span id="cons"></span><span class="sep"></span>
+<button id="bAll">Overview</button><button id="bL" class="on">Lines</button><button id="bN" class="on">Names</button></header>
+<div id="stage"><canvas id="cv"></canvas><div id="hint">Drag to pan · pinch / scroll to zoom · tap a star</div></div>
+<aside id="info"></aside>
+<script>
+// Stars: [name, RA hours (J2000), Dec deg, apparent magnitude]. Stick figures are simplified.
+const C={
+cma:{n:'Canis Major',al:'The Greater Dog',c:'#7fd1ff',note:'Canis Major is home to Sirius, the brightest star in the night sky. Its companion Sirius B, “The Pup”, is a white dwarf about 8.6 light-years from Earth. Orion’s belt points toward Sirius.',
+s:{sirius:['Sirius',6.752,-16.716,-1.46],mirzam:['Mirzam',6.378,-17.956,1.98],muliphein:['Muliphein',7.063,-15.633,4.1],iota:['Iota CMa',6.935,-17.054,4.4],omi2:['Omicron² CMa',7.050,-23.833,3.02],wezen:['Wezen',7.140,-26.393,1.84],aludra:['Aludra',7.402,-29.303,2.45],adhara:['Adhara',6.977,-28.972,1.5],furud:['Furud',6.339,-30.063,3.02],nu2:['Nu² CMa',6.612,-19.256,3.95]},
+l:[['mirzam','sirius'],['sirius','muliphein'],['sirius','iota'],['sirius','omi2'],['omi2','wezen'],['wezen','aludra'],['wezen','adhara'],['adhara','furud'],['mirzam','nu2']]},
+cmi:{n:'Canis Minor',al:'The Lesser Dog',c:'#ffd166',note:'Canis Minor is a small constellation. Procyon is its brightest star, and its companion Procyon B is a nearby white dwarf about 11.5 light-years from Earth.',
+s:{procyon:['Procyon',7.655,5.225,.34],gomeisa:['Gomeisa',7.452,8.289,2.89]},l:[['procyon','gomeisa']]},
+ori:{n:'Orion',al:'The Hunter',c:'#6fe3d0',note:'Orion is shown for orientation. Its red supergiant Betelgeuse is one corner of the Winter Triangle, together with Sirius and Procyon.',
+s:{betelgeuse:['Betelgeuse',5.919,7.407,.42],rigel:['Rigel',5.242,-8.202,.13],bellatrix:['Bellatrix',5.419,6.35,1.64],saiph:['Saiph',5.796,-9.67,2.06],alnitak:['Alnitak',5.679,-1.943,1.77],alnilam:['Alnilam',5.604,-1.202,1.69],mintaka:['Mintaka',5.533,-.299,2.23],meissa:['Meissa',5.585,9.934,3.39]},
+l:[['meissa','betelgeuse'],['meissa','bellatrix'],['betelgeuse','alnitak'],['bellatrix','mintaka'],['mintaka','alnilam'],['alnilam','alnitak'],['alnitak','saiph'],['saiph','rigel'],['mintaka','rigel']]}
+};
+const ST={};for(const[k,c]of Object.entries(C))for(const[i,s]of Object.entries(c.s))ST[i]=[k,s];
+// White dwarfs: table data (type, constellation, distance, notes). Position = that of the bright primary (the pair is too close to split at this scale).
+const WD={
+sirius:{c:'cma',chip:'Sirius B',name:'Sirius B (“The Pup”)',lab:'Sirius A + B',type:'White dwarf in a binary system',dist:'About 8.6 light-years',con:'Canis Major',mag:'−1.46 (Sirius A)',sp:'A1V (Sirius A)',ra:'06h 45m 09s',dec:'−16° 43′',per:50.1,e:.59,d:'Orbits Sirius A, the brightest star in the night sky.'},
+procyon:{c:'cmi',chip:'Procyon B',name:'Procyon B',lab:'Procyon A + B',type:'White dwarf in a binary system',dist:'About 11.5 light-years',con:'Canis Minor',mag:'0.34 (Procyon A)',sp:'F5IV–V (Procyon A)',ra:'07h 39m 18s',dec:'+05° 13′',per:40.8,e:.4,d:'A nearby white dwarf companion to Procyon A.'}
+};
+const WC='#8fd3ff',$=id=>document.getElementById(id),cv=$('cv'),g=cv.getContext('2d');
+let W,H,DPR,V={ra:6.8,dec:-8,s:2},T={...V},sel=null,showL=true,showN=true,focus=null;
+let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const BG=Array.from({length:900},()=>[rnd()*24,Math.asin(rnd()*2-1)*57.3,rnd()*.9+.3,rnd()]);
+const wr=d=>((d+12)%24+24)%24-12;
+const P=(ra,dec)=>[W/2-wr(ra-V.ra)*15*Math.cos(V.dec*Math.PI/180)*V.s,H/2-(dec-V.dec)*V.s];
+function fit(list,pad=.74){const r0=list[0][0],rs=list.map(p=>wr(p[0]-r0)),a=Math.min(...rs),b=Math.max(...rs),ds=list.map(p=>p[1]),dc=(Math.min(...ds)+Math.max(...ds))/2,
+ w=(b-a)*15*Math.cos(dc*Math.PI/180)||1,h=Math.max(...ds)-Math.min(...ds)||1;return{ra:(r0+(a+b)/2+24)%24,dec:dc,s:Math.min(W*pad/w,H*pad/h,38)}}
+const conPts=k=>[...Object.values(C[k].s),...(k=='cmi'?[ST.sirius[1],ST.betelgeuse[1]]:[])].map(s=>[s[1],s[2]]);
+const allPts=()=>Object.keys(C).flatMap(conPts);
+function overview(){sel=null;focus=null;T=fit(allPts(),.86);render()}
+function pick(c,id){focus=c;sel=id||null;T=fit(conPts(c),.7);render()}
+function resize(){DPR=devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=W*DPR;cv.height=H*DPR;g.setTransform(DPR,0,0,DPR,0,0)}
+function inset(ts){const w=WD[sel];if(!w)return;const x0=12,y0=H-152,s=140,a=38,e=w.e,b=a*Math.sqrt(1-e*e),fx=x0+s/2+14,fy=y0+s/2;
+ g.globalAlpha=1;g.fillStyle='rgba(15,22,38,.88)';g.strokeStyle='#26324d';g.lineWidth=1;g.fillRect(x0,y0,s,s);g.strokeRect(x0,y0,s,s);
+ g.strokeStyle='#4a5a80';g.beginPath();g.ellipse(fx-a*e,fy,a,b,0,0,7);g.stroke();
+ const M=ts/1000/(w.per/8)*6.2832;let E=M;for(let i=0;i<6;i++)E-=(E-e*Math.sin(E)-M)/(1-e*Math.cos(E));
+ const bx=fx+a*(Math.cos(E)-e),by=fy+b*Math.sin(E);
+ g.shadowColor='#fff';g.shadowBlur=10;g.fillStyle='#f4f7ff';g.beginPath();g.arc(fx,fy,5,0,7);g.fill();
+ g.shadowColor=WC;g.fillStyle=WC;g.beginPath();g.arc(bx,by,3,0,7);g.fill();g.shadowBlur=0;
+ g.font='11px Segoe UI,sans-serif';g.fillStyle='#e6ebf5';g.fillText(w.lab.split(' + ')[0],fx+8,fy+16);g.fillStyle=WC;g.fillText('B',bx+6,by-5);
+ g.fillStyle='#93a0ba';g.fillText('Orbit schematic · 1 s ≈ 8 yr',x0+8,y0+14)}
+function draw(ts){
+ V.ra=(V.ra+wr(T.ra-V.ra)*.14+24)%24;V.dec+=(T.dec-V.dec)*.14;V.s+=(T.s-V.s)*.14;
+ g.fillStyle='#070b16';g.fillRect(0,0,W,H);
+ for(const b of BG){const[x,y]=P(b[0],b[1]);if(x<0||y<0||x>W||y>H)continue;g.globalAlpha=.25+b[3]*.5;g.fillStyle='#cfd8ee';g.fillRect(x,y,b[2],b[2])}
+ g.globalAlpha=1;g.lineWidth=1;g.textAlign='left';
+ for(const[k,c]of Object.entries(C)){
+  const act=!focus||focus==k;let cx=0,my=1e9,n=0;
+  if(showL){g.strokeStyle=c.c;g.globalAlpha=act?.75:.25;g.lineWidth=act?1.6:1;g.beginPath();
+   for(const[a,b]of c.l){const A=P(c.s[a][1],c.s[a][2]),B=P(c.s[b][1],c.s[b][2]);g.moveTo(A[0],A[1]);g.lineTo(B[0],B[1])}g.stroke()}
+  for(const[id,s]of Object.entries(c.s)){const[x,y]=P(s[1],s[2]),w=WD[id],r=Math.max(1.6,(4.3-s[3])*1.45);cx+=x;my=Math.min(my,y);n++;
+   g.globalAlpha=act?1:.45;g.shadowColor=w?WC:'#fff';g.shadowBlur=w?16:6;g.fillStyle=k=='ori'&&id=='betelgeuse'?'#ff9a5c':'#f4f7ff';
+   g.beginPath();g.arc(x,y,r,0,7);g.fill();g.shadowBlur=0;
+   if(w){const p=(ts/1400)%1;g.strokeStyle=WC;g.lineWidth=1.4;g.beginPath();g.arc(x,y,r+5,0,7);g.stroke();
+    g.globalAlpha=(1-p)*.6;g.beginPath();g.arc(x,y,r+5+p*16,0,7);g.stroke();g.globalAlpha=act?1:.45}
+   if(showN&&act&&(w||s[3]<2.6||focus==k)){g.fillStyle=w?'#fff':'#aebbd6';g.font=(w?'bold ':'')+'12px Segoe UI,sans-serif';g.fillText(w?w.lab+' (white dwarf)':s[0],x+r+8,y+4)}
+   if(sel==id){const p=(ts/900)%1;g.strokeStyle='#ffb454';g.lineWidth=2;g.globalAlpha=1-p*.7;g.beginPath();g.arc(x,y,r+10+p*16,0,7);g.stroke();g.globalAlpha=1}
+   g.lineWidth=1}
+  if(showN){g.globalAlpha=act?.9:.5;g.fillStyle=c.c;g.font='600 '+(focus==k?15:13)+'px Segoe UI,sans-serif';g.textAlign='center';
+   g.fillText(c.n.toUpperCase().split('').join(' '),cx/n,my-18);g.textAlign='left'}
+  g.globalAlpha=1}
+ if(showL){const t=['sirius','procyon','betelgeuse'].map(i=>P(ST[i][1][1],ST[i][1][2]));g.strokeStyle='#e8c96a';g.globalAlpha=.7;g.lineWidth=1.2;g.setLineDash([6,4]);g.beginPath();
+  g.moveTo(t[0][0],t[0][1]);g.lineTo(t[1][0],t[1][1]);g.lineTo(t[2][0],t[2][1]);g.closePath();g.stroke();g.setLineDash([]);
+  if(showN){g.fillStyle='#e8c96a';g.font='italic 12px Segoe UI,sans-serif';g.textAlign='center';g.fillText('Winter Triangle',(t[0][0]+t[1][0]+t[2][0])/3,(t[0][1]+t[1][1]+t[2][1])/3);g.textAlign='left'}g.globalAlpha=1}
+ inset(ts);requestAnimationFrame(draw)}
+const chip=(t,f,k)=>{const b=document.createElement('button');b.textContent=t;b.onclick=f;if(k)b.dataset.k=k;return b};
+const mark=()=>document.querySelectorAll('[data-k]').forEach(b=>b.classList.toggle('on',b.dataset.k==sel||b.dataset.k=='c:'+focus));
+function render(){const A=$('info');mark();
+ if(!sel&&!focus){A.innerHTML='<h2>Nearby White Dwarf Stars</h2><p class="sub">A comparison of selected white dwarf stars and their characteristics.</p><div class="box">Choose a white dwarf at the top to zoom to it and see which constellation it sits in. Choose a constellation to see its star pattern.</div><div class="box"><b>Legend</b><span style="color:var(--wd)">◎ White dwarf (pulsing ring)</span><br>Dashed gold lines show the Winter Triangle (Sirius – Procyon – Betelgeuse). Lines are simplified stick figures. Positions use J2000 coordinates.</div>';return}
+ const ck=sel&&ST[sel]?ST[sel][0]:focus,c=C[ck],w=WD[sel];let h='';
+ if(w)h+=`<h2>${w.name}</h2><div class="sub"><span class="badge">White dwarf</span>in ${c.n} (${c.al})</div>
+ <dl><dt>Type</dt><dd>${w.type}</dd><dt>Constellation</dt><dd>${w.con}</dd><dt>Distance</dt><dd>${w.dist}</dd><dt>Primary star</dt><dd>${w.lab.split(' + ')[0]}</dd><dt>Primary magnitude</dt><dd>${w.mag}</dd><dt>Primary spectral type</dt><dd>${w.sp}</dd><dt>RA / Dec</dt><dd>${w.ra} / ${w.dec}</dd><dt>Orbital period</dt><dd>≈ ${w.per} years</dd></dl>
+ <div class="box"><b>Notes</b>${w.d}</div><div class="note">The white dwarf is far too close to its bright partner to be split at this scale, so the marker shows the A + B pair. The inset is a schematic of the orbit, not to scale.</div>`;
+ else if(sel){const s=c.s[sel];h+=`<h2>${s[0]}</h2><div class="sub">in ${c.n} · magnitude ${s[3]}</div>`}
+ else h+=`<h2>${c.n}</h2><div class="sub">${c.al}</div>`;
+ h+=`<div class="box" style="border-color:${c.c}"><b style="color:${c.c}">Constellation: ${c.n}</b>${c.note}</div><div class="sub">Stars in this figure (tap to locate)</div><div class="cs" id="cs"></div>`;
+ A.innerHTML=h;for(const[i,s]of Object.entries(c.s))$('cs').append(chip(s[0],()=>{sel=i;render()},i));mark()}
+for(const[i,w]of Object.entries(WD))$('stars').append(chip(w.chip,()=>pick(w.c,i),i));
+for(const[i,c]of Object.entries(C))$('cons').append(chip(c.n,()=>pick(i,null),'c:'+i));
+$('bAll').onclick=overview;
+$('bL').onclick=e=>{showL=!showL;e.target.classList.toggle('on',showL)};
+$('bN').onclick=e=>{showN=!showN;e.target.classList.toggle('on',showN)};
+const ptr=new Map();let moved=0,pd=0;
+cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.offsetX,e.offsetY]);moved=0;pd=0;cv.style.cursor='grabbing'};
+cv.onpointermove=e=>{if(!ptr.has(e.pointerId))return;const o=ptr.get(e.pointerId),n=[e.offsetX,e.offsetY];
+ if(ptr.size==1){const dx=n[0]-o[0],dy=n[1]-o[1];moved+=Math.abs(dx)+Math.abs(dy);
+  V.ra=T.ra=(V.ra+dx/(15*Math.cos(V.dec*Math.PI/180)*V.s)+24)%24;V.dec=T.dec=Math.max(-85,Math.min(85,V.dec+dy/V.s))}
+ else{ptr.set(e.pointerId,n);const[a,b]=[...ptr.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(pd)V.s=T.s=Math.max(.8,Math.min(60,V.s*d/pd));pd=d;moved+=5}
+ ptr.set(e.pointerId,n)};
+cv.onpointerup=cv.onpointercancel=e=>{ptr.delete(e.pointerId);pd=0;cv.style.cursor='grab';if(moved<6&&!ptr.size)tap(e.offsetX,e.offsetY)};
+cv.onwheel=e=>{e.preventDefault();V.s=T.s=Math.max(.8,Math.min(60,V.s*(e.deltaY<0?1.12:.89)))};
+function tap(x,y){let best=null,bd=26;for(const[i,[k,s]]of Object.entries(ST)){const[a,b]=P(s[1],s[2]),d=Math.hypot(a-x,b-y);if(d<bd){bd=d;best=[k,i]}}
+ if(best){focus=best[0];sel=best[1];render()}}
+addEventListener('resize',resize);resize();V=fit(allPts(),.86);T={...V};render();requestAnimationFrame(draw);
+</script></body></html>

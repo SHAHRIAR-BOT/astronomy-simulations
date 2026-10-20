@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Astrophysics & Astronomy Simulations Portal</title>
+  <style>
+    :root {
+      --bg: #070a13;
+      --card-bg: rgba(18, 25, 43, 0.75);
+      --card-border: rgba(70, 95, 145, 0.25);
+      --card-hover: rgba(80, 130, 220, 0.35);
+      --text: #f0f4fc;
+      --text-muted: #8e9bb5;
+      --accent: #3ea8ff;
+      --accent-glow: rgba(62, 168, 255, 0.3);
+      --tag-bg: rgba(62, 168, 255, 0.12);
+      --tag-border: rgba(62, 168, 255, 0.3);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      background-image: 
+        radial-gradient(ellipse at 20% 10%, rgba(35, 75, 140, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(120, 45, 120, 0.2) 0%, transparent 50%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      min-height: 100vh;
+      padding: max(24px, env(safe-area-inset-top)) 16px 48px;
+    }
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+      padding: 10px 0;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: clamp(24px, 5vw, 36px);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #ffffff 30%, #8fc5ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p.lead {
+      color: var(--text-muted);
+      font-size: clamp(14px, 2.5vw, 16px);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--card-hover);
+      box-shadow: 0 10px 28px -8px var(--accent-glow);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .sim-tag {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+      background: var(--tag-bg);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .sim-icon {
+      font-size: 20px;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      line-height: 1.35;
+    }
+    p.desc {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 20px;
+      flex-grow: 1;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: #1c2744;
+      border: 1px solid rgba(80, 130, 220, 0.4);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .card:hover .btn {
+      background: #25407a;
+      border-color: var(--accent);
+    }
+    footer {
+      text-align: center;
+      margin-top: 48px;
+      font-size: 13px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--card-border);
+      padding-top: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">📖 Interactive Book Companion</div>
+      <h1>Astrophysics Simulations</h1>
+      <p class="lead">Scan the QR codes inside the book or click below to launch real-time interactive astrophysics simulations directly in your browser.</p>
+    </header>
+
+    <div class="grid">
+      <!-- 1 -->
+      <a href="nuclear-fusion.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Chapter 6.1</span>
+            <span class="sim-icon">⚛️</span>
+          </div>
+          <h2>Stellar Fusion Core</h2>
+          <p class="desc">Proton-proton chain Coulomb barrier repulsion and hydrogen-to-helium fusion under extreme thermal pressure.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 2 -->
+      <a href="nucleosynthesis.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Chapter 6.2</span>
+            <span class="sim-icon">✨</span>
+          </div>
+          <h2>Stellar Nucleosynthesis</h2>
+          <p class="desc">Elemental synthesis from helium burning through carbon and oxygen to the iron core catastrophe.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 3 -->
+      <a href="energy-transport.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Chapter 6.3</span>
+            <span class="sim-icon">☀️</span>
+          </div>
+          <h2>Stellar Energy Transport</h2>
+          <p class="desc">Photon random walk in the radiative zone and thermal convective cell circulation up to the photosphere.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 4 -->
+      <a href="black-hole.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Astrophysics</span>
+            <span class="sim-icon">🕳️</span>
+          </div>
+          <h2>Black Hole Spaghettification</h2>
+          <p class="desc">Relativistic tidal disruption, Schwarzschild radius event horizon, and Doppler beaming accretion disk dynamics.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 5 -->
+      <a href="nearby-white-dwarfs.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Sky Locator</span>
+            <span class="sim-icon">🔭</span>
+          </div>
+          <h2>Nearby White Dwarfs</h2>
+          <p class="desc">Interactive 3D celestial sky locator to trace nearby white dwarf stellar remnants and binary companions.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 6 -->
+      <a href="neutron-star.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Compact Objects</span>
+            <span class="sim-icon">💫</span>
+          </div>
+          <h2>Neutron Star & Pulsar</h2>
+          <p class="desc">Relativistic lighthouse beam geometry, hyper-dense degeneracy pressure, and millisecond pulsar magnetic spin.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 7 -->
+      <a href="red-giant.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Stellar Evolution</span>
+            <span class="sim-icon">🔴</span>
+          </div>
+          <h2>Solar Evolution & Red Giant</h2>
+          <p class="desc">Core contraction, shell hydrogen burning, envelope expansion, and future engulfment of inner terrestrial planets.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 8 -->
+      <a href="red-giants-sky.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Sky Locator</span>
+            <span class="sim-icon">🌌</span>
+          </div>
+          <h2>Red Giants & Supergiants Sky Map</h2>
+          <p class="desc">Night sky constellation chart to locate famous red giants like Betelgeuse, Aldebaran, Arcturus, and Antares.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 9 -->
+      <a href="supernova.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Core Collapse</span>
+            <span class="sim-icon">💥</span>
+          </div>
+          <h2>Supernova Core Collapse</h2>
+          <p class="desc">Type II core collapse shock breakout, nickel-56 decay light curve, and expanding blastwave nebula formation.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 10 -->
+      <a href="white-dwarf.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Remnants</span>
+            <span class="sim-icon">⚪</span>
+          </div>
+          <h2>White Dwarf & Chandrasekhar Limit</h2>
+          <p class="desc">Electron degeneracy pressure equilibrium and thermal cooling timescale of carbon-oxygen degenerate cores.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+    </div>
+
+    <footer>
+      <p>Interactive Astrophysics Book Series &bull; Hosted on GitHub Pages &bull; Accessible on mobile & desktop</p>
+    </footer>
+  </div>
+</body>
+</html>

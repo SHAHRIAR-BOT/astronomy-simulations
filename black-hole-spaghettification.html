@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Relativistic Black Hole & Tidal Disruption</title>
+<style>
+:root{--bg:#0d0d0e;--cd:#141414;--ln:#2a2a2e;--tx:#e8e8ea;--mu:#8d8f98;--bl:#9ccfff;--ac:#ffb454}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,"Segoe UI",sans-serif;padding:max(12px,env(safe-area-inset-top)) 12px 24px}
+main{max-width:980px;margin:0 auto}h1{font-size:clamp(20px,4.5vw,28px);font-weight:500;margin:6px 0 2px}
+.s{font:13px/1.4 "Courier New",monospace;color:var(--mu);margin:0 0 12px}
+.card{background:var(--cd);border:1px solid var(--ln);border-radius:14px;margin-bottom:12px;position:relative;overflow:hidden}
+canvas{display:block;width:100%;aspect-ratio:14/10;background:#05060a;touch-action:none}
+#hud{position:absolute;left:10px;top:10px;background:rgba(20,20,22,.82);border:1px solid var(--ln);border-radius:10px;padding:9px 12px;font:12px/1.65 "Courier New",monospace;color:var(--mu);min-width:200px}
+#hud div{display:flex;justify-content:space-between;gap:14px}#hud b{color:var(--bl)}
+.ctl{padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 22px;align-items:center}
+label{display:flex;flex-direction:column;gap:5px;font-size:14px}label span{display:flex;justify-content:space-between}label output{font-family:"Courier New",monospace;color:var(--bl)}
+input[type=range]{width:100%;accent-color:#0a6cff}select{background:#1b1b1d;color:var(--tx);border:1px solid var(--ln);border-radius:8px;padding:8px;font:inherit}
+.btns{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button{font:inherit;color:var(--tx);background:#1d1d20;border:1px solid var(--ln);border-radius:22px;padding:11px 20px;cursor:pointer}button:hover{border-color:var(--ac)}button:focus-visible,select:focus-visible{outline:2px solid var(--ac)}
+.chk{flex-direction:row;align-items:center;gap:8px;font-size:13px;color:var(--mu)}
+#an{padding:14px}#an h2{font-size:16px;margin:0 0 2px;font-weight:600}#an .sb{color:var(--mu);font-size:13px;margin-bottom:10px}
+.stg{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.stg i{font-style:normal;font-size:12px;padding:4px 10px;border-radius:12px;border:1px solid var(--ln);color:var(--mu)}.stg i.on{background:#3a2a10;border-color:var(--ac);color:var(--ac)}
+.gr{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 20px;font:13px "Courier New",monospace;margin:10px 0}.gr div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--ln);padding:3px 0}.gr b{color:var(--bl);font-weight:600}
+.tx{font-size:14px;line-height:1.55;margin:8px 0}.nt{font-size:12.5px;color:var(--mu);line-height:1.5;border-top:1px solid var(--ln);padding-top:10px;margin-top:10px}
+@media(max-width:560px){#hud{font-size:10.5px;padding:6px 8px;min-width:0}canvas{aspect-ratio:1/1}}
+</style></head><body><main>
+<h1>Relativistic Black Hole & Tidal Disruption</h1>
+<p class="s">Doppler beaming accretion flow & spaghettification physics</p>
+<div class="card"><canvas id="cv"></canvas>
+<div id="hud"><div>SCHWARZSCHILD RADIUS: <b id="hRs"></b></div><div>TIDAL LIMIT (TRUE): <b id="hRt"></b></div><div>ACTIVE BODIES: <b id="hAb">0</b></div></div></div>
+<div class="card ctl">
+<label><span>Black Hole Mass <output id="oM"></output></span><input id="M" type="range" min="3" max="100" step="1" value="18"></label>
+<label>Celestial body<select id="ty"></select></label>
+<label><span>Closest approach <output id="oP"></output></span><input id="P" type="range" min="1.2" max="8" step=".1" value="2.5"></label>
+<label><span>Viewing angle <output id="oV"></output></span><input id="V" type="range" min="6" max="75" step="1" value="18"></label>
+<label><span>Time speed <output id="oS"></output></span><input id="S" type="range" min=".1" max="3" step=".1" value="1"></label>
+<div class="btns"><button id="sp">Spawn Celestial Body</button><button id="cl">Clear Debris</button>
+<label class="chk"><input type="checkbox" id="cp" checked> Compressed tidal scale (demo)</label></div></div>
+<div class="card" id="an"></div>
+</main>
+<script>
+const RS=20,GM=225000,C=150,SB=1.989e30,GG=6.674e-11,KM=2.953;
+// real mass (kg), radius (km). vr = drawn radius (px)
+const TY=[
+{n:'Sun-like star',m:1.989e30,R:695700,col:[255,210,120],vr:12},
+{n:'Gas giant (Jupiter-like)',m:1.898e27,R:69911,col:[225,175,125],vr:9},
+{n:'Rocky planet (Earth-like)',m:5.972e24,R:6371,col:[110,170,255],vr:6},
+{n:'Moon-sized rocky body',m:7.342e22,R:1737,col:[205,205,205],vr:5},
+{n:'White dwarf (0.6 M☉)',m:1.193e30,R:8900,col:[190,225,255],vr:5},
+{n:'Neutron star (1.4 M☉)',m:2.785e30,R:12,col:[150,255,232],vr:3.5}];
+const STG=['Intact','Deforming','Breaking up','Spaghettification','Stream','Swallowed'];
+const TXT=[
+'Tidal pull is weaker than the body’s own gravity, so it stays close to spherical while it falls.',
+'The side nearer the hole is pulled harder than the far side. The body is stretched along the radial line into an elongated (prolate) shape.',
+'Tidal stretch now exceeds self-gravity (distance below the tidal radius). Material at the two ends is no longer held on and starts to peel away.',
+'Spaghettification: stretched along the line to the hole, squeezed from the sides. The converging directions of gravity compress the body sideways and vertically while it is pulled into a thin thread.',
+'Fully disrupted. In stellar tidal-disruption theory roughly half the debris is bound and feeds the disk, the rest can escape. The bound stream wraps around the hole and heats up.',
+'The body (or its last fragments) crossed the event horizon. Nothing that falls in can send light back out.'];
+const $=id=>document.getElementById(id),cv=$('cv'),g=cv.getContext('2d');
+const tyS=$('ty');TY.forEach((t,i)=>tyS.add(new Option(t.n,i)));tyS.value=0;
+let W,H,SC,Mbh=18,spd=1,E=18*Math.PI/180,comp=true,peri=2.5,P=[],bodies=[],disk=[],trk=null;
+const ST=[];const rn=()=>Math.random(),clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+for(let i=0;i<90;i++)ST.push([rn(),rn(),rn()*1.2+.3,rn()*.5+.2]);
+const gauss=()=>(rn()+rn()+rn()+rn()-2)*1.7;
+for(let i=0;i<950;i++){const r=60+Math.pow(rn(),.85)*115,v=Math.sqrt(GM*r)/(r-RS);disk.push({r,th:rn()*6.283,h:gauss()*.035*r,om:v/r,s:.8+rn()*1.2})}
+const fx=(v,d=2)=>{if(!isFinite(v))return '—';const a=Math.abs(v);return a>=1e5||(a<.01&&a>0)?v.toExponential(2).replace('e+','e'):v.toFixed(a>=100?0:d)};
+const RSkm=()=>KM*Mbh;
+function tidal(i){const t=TY[i],M=Mbh*SB,rt=t.R*Math.cbrt(2*M/t.m);return{km:rt,q:rt/RSkm()}}
+function demoRt(i){const q=tidal(i).q;if(!comp)return q;return q<=1?q:Math.min(9.5,1+1.6*Math.log10(q))}
+function resize(){const d=devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;cv.width=w*d;cv.height=h*d;W=w;H=h;SC=Math.min(w/560,h/400)*(w<500?1.0:1)}
+function spawn(){
+ const ti=+tyS.value,t=TY[ti],r0=12*RS,th=rn()*6.283,rp=peri*RS;
+ const v0=.75*Math.sqrt(2*GM/(r0-RS)),Ee=.5*v0*v0-GM/(r0-RS),vp=Math.sqrt(Math.max(1,2*(Ee+GM/(rp-RS))));
+ let vt=Math.min(rp*vp/r0,v0*.999);const vr=-Math.sqrt(v0*v0-vt*vt);
+ const q=tidal(ti).q,dr=demoRt(ti),rte=q<=1?.12*RS:Math.max(.25*RS,(dr-1)*RS);
+ const b={id:bodies.length,ti,R:t.vr,k:Math.min(2*GM/Math.pow(rte,3),q<=1?20000:3600),gm:.5,q,dr,Mbh,n:0,peak:0};
+ const ux=Math.cos(th),uy=Math.sin(th),tx=uy,ty=-ux;
+ const cx=ux*r0,cy=uy*r0,cvx=ux*vr+tx*vt,cvy=uy*vr+ty*vt;
+ for(let i=0;i<230;i++){let x,y,z;do{x=rn()*2-1;y=rn()*2-1;z=rn()*2-1}while(x*x+y*y+z*z>1);
+  const ox=x*t.vr,oy=y*t.vr;P.push({x:cx+ox,y:cy+oy,h:z*t.vr,vx:cvx,vy:cvy,vh:0,b:b.id,bound:true,s:1.2+rn(),oa:ox*ux+oy*uy,ob:-ox*uy+oy*ux,oc:z*t.vr});b.n++}
+ b.cx=cx;b.cy=cy;b.ch=0;b.cvx=cvx;b.cvy=cvy;b.cvh=0;bodies.push(b);trk=b;
+}
+function step(dt){
+ const n=8,h=dt/n;
+ for(let k=0;k<n;k++){
+  for(const b of bodies){let sx=0,sy=0,sh=0,vx=0,vy=0,vh=0,c=0;
+   for(const p of P)if(p.b===b.id&&p.bound){sx+=p.x;sy+=p.y;sh+=p.h;vx+=p.vx;vy+=p.vy;vh+=p.vh;c++}
+   if(c){b.cx=sx/c;b.cy=sy/c;b.ch=sh/c;b.cvx=vx/c;b.cvy=vy/c;b.cvh=vh/c;const d=Math.hypot(b.cx,b.cy)||1;b.rx=b.cx/d;b.ry=b.cy/d}b.c=c}
+  for(const p of P){const r=Math.sqrt(p.x*p.x+p.y*p.y+p.h*p.h);if(r<RS*1.03){p.dead=1;continue}
+   const a=-GM/((r-RS)*(r-RS))/r;let ax=a*p.x,ay=a*p.y,ah=a*p.h;
+   if(p.bound){const b=bodies[p.b],ex=p.x-b.cx-(p.oa*b.rx-p.ob*b.ry),ey=p.y-b.cy-(p.oa*b.ry+p.ob*b.rx),eh=p.h-b.ch-p.oc;
+    ax-=b.k*ex+b.gm*(p.vx-b.cvx);ay-=b.k*ey+b.gm*(p.vy-b.cvy);ah-=b.k*eh+b.gm*(p.vh-b.cvh);
+    if(Math.hypot(ex,ey,eh)>b.R)p.bound=false}
+   p.vx+=ax*h;p.vy+=ay*h;p.vh+=ah*h;const v=Math.hypot(p.vx,p.vy,p.vh);if(v>C){const f=C/v;p.vx*=f;p.vy*=f;p.vh*=f}
+   p.x+=p.vx*h;p.y+=p.vy*h;p.h+=p.vh*h;if(Math.abs(p.x)>330||Math.abs(p.y)>330)p.dead=1}
+ }
+ for(const d of disk)d.th-=d.om*dt;
+ P=P.filter(p=>!p.dead);if(P.length>4500)P.splice(0,P.length-4500);
+}
+const sE=()=>Math.sin(E),cE=()=>Math.cos(E);
+function proj(x,y,h,sn,cs,lens){let sx=x,sy=y*sn-h*cs;
+ if(y<0&&lens>0){const p=Math.hypot(x,y)||1,w=Math.pow(Math.abs(y)/p,1.5)*.85*lens,Ra=Math.max(52,53.6+.35*(p-60));
+  sx+=(x/p*Ra-sx)*w;sy+=(-Math.abs(y)/p*Ra-sy)*w}return[sx,sy]}
+function dop(vx,vy,vh,r,sn,cs){const be=clamp((vy*sn+vh*cs)/C,-.9,.9),ga=1/Math.sqrt(1-be*be),d=1/(ga*(1-be)),f=d*Math.sqrt(Math.max(.05,1-RS/r)),I=Math.min(1.5,Math.pow(f,3)*.5);let R,G,B;
+ if(f<1){const t=clamp((f-.5)/.5,0,1);R=255;G=60+110*t;B=15+45*t}else{const t=clamp((f-1)/.7,0,1);R=255-85*t;G=170+45*t;B=105+150*t}return[R,G,B,I]}
+function dot(x,y,r,c,a){g.fillStyle=`rgba(${c[0]|0},${c[1]|0},${c[2]|0},${clamp(a,0,1)})`;g.beginPath();g.arc(x,y,r,0,6.283);g.fill()}
+function draw(){
+ const sn=sE(),cs=cE(),lens=clamp((.9-sn)/.6,0,1);
+ g.setTransform(cv.width/W,0,0,cv.width/W,0,0);g.fillStyle='#05060a';g.fillRect(0,0,W,H);
+ for(const q of ST){g.fillStyle='rgba(200,210,235,'+q[3]+')';g.fillRect(q[0]*W,q[1]*H,q[2],q[2])}
+ g.save();g.translate(W/2,H/2);g.scale(SC,SC);
+ g.globalCompositeOperation='lighter';
+ const front=[];
+ const emit=(x,y,h,vx,vy,vh,s,col,heat)=>{const r=Math.sqrt(x*x+y*y+h*h),[sx,sy]=proj(x,y,h,sn,cs,lens);let c=dop(vx,vy,vh,r,sn,cs),a=.25+.5*c[3];
+  if(col){const m=1-heat;c=[col[0]*m+c[0]*heat,col[1]*m+c[1]*heat,col[2]*m+c[2]*heat];a=.9}
+  const it=[sx,sy,s,c,a];if(y>=0)front.push(it);else dot(sx,sy,s,c,a)};
+ for(const d of disk){const x=d.r*Math.cos(d.th),y=d.r*Math.sin(d.th),v=d.om*d.r;emit(x,y,d.h,d.om*y,-d.om*x,0,d.s,null,1)}
+ for(const p of P){const b=bodies[p.b],t=TY[b.ti];emit(p.x,p.y,p.h,p.vx,p.vy,p.vh,p.bound?p.s+.5:p.s,p.bound?t.col:t.col,p.bound?(b.heat||0):clamp((b.heat||0)+.5,0,1))}
+ g.globalCompositeOperation='source-over';
+ g.fillStyle='#000';g.beginPath();g.arc(0,0,52,0,6.283);g.fill();
+ const gr=g.createRadialGradient(0,0,40,0,0,78);gr.addColorStop(0,'rgba(170,215,255,0)');gr.addColorStop(.3,'rgba(190,225,255,.85)');gr.addColorStop(.38,'rgba(160,205,255,.35)');gr.addColorStop(1,'rgba(120,170,255,0)');
+ g.globalCompositeOperation='lighter';g.fillStyle=gr;g.beginPath();g.arc(0,0,78,0,6.283);g.fill();
+ g.strokeStyle='rgba(255,255,255,.95)';g.lineWidth=1.6;g.beginPath();g.arc(0,0,53,0,6.283);g.stroke();
+ for(const it of front)dot(it[0],it[1],it[2],it[3],it[4]);
+ g.globalCompositeOperation='source-over';
+ // tidal limit (for selected body type)
+ const rt=demoRt(+tyS.value)*RS;if(rt>RS&&rt<330){g.setLineDash([4,6]);g.strokeStyle='rgba(180,190,210,.35)';g.lineWidth=1;g.beginPath();g.ellipse(0,0,rt,rt*sn,0,0,6.283);g.stroke();g.setLineDash([])}
+ if(trk&&trk.c>0){const[sx,sy]=proj(trk.cx,trk.cy,trk.ch,sn,cs,lens);g.strokeStyle='rgba(255,180,84,.8)';g.lineWidth=1;g.beginPath();g.arc(sx,sy,trk.R+8,0,6.283);g.stroke()}
+ g.restore();
+}
+// stars
+
+function metrics(b){const ps=P.filter(p=>p.b===b.id),n=ps.length;if(!n)return null;
+ let cx=0,cy=0,ch=0;for(const p of ps){cx+=p.x;cy+=p.y;ch+=p.h}cx/=n;cy/=n;ch/=n;
+ const d=Math.hypot(cx,cy)||1,rx=cx/d,ry=cy/d;let a=0,t=0,hv=0,ub=0;
+ for(const p of ps){const dx=p.x-cx,dy=p.y-cy,dh=p.h-ch,pr=dx*rx+dy*ry,pt=-dx*ry+dy*rx;a+=pr*pr;t+=pt*pt;hv+=dh*dh;
+  const r=Math.hypot(p.x,p.y,p.h);if(.5*(p.vx*p.vx+p.vy*p.vy+p.vh*p.vh)-GM/Math.max(.1,r-RS)>0)ub++}
+ const s0=b.R/Math.sqrt(5);return{n,r:Math.hypot(cx,cy,ch),sr:Math.sqrt(a/n)/s0,sp:Math.sqrt((t+hv)/(2*n))/s0,ub:ub/n}}
+function stage(b,m){if(!m||m.r<RS*1.1)return 5;const s=m.sr;return s<1.15?0:s<1.7?1:s<3?2:s<10?3:4}
+const an=$('an');an.innerHTML='<h2>Tidal analysis</h2><div class="sb" id="aS">Spawn a body to start tracking it.</div><div class="stg" id="aG"></div><div class="gr" id="aR"></div><div class="tx" id="aT"></div><div class="nt">Tidal radius uses the self-gravity criterion r<sub>t</sub> = R·(2M/m)<sup>1/3</sup> with real masses and radii. Spaghettification is not scripted: every particle feels the same pseudo-Newtonian gravity (horizon at r = R<sub>s</sub>, ISCO at 3 R<sub>s</sub>), so the stretch along the radius and squeeze across it come from the gravity gradient. Disk and debris brightness uses relativistic Doppler beaming (∝ δ³) and gravitational dimming. Back-of-disk lensing is an approximation. With the compressed scale on, the drawn tidal radius is log-compressed so any body can disrupt on screen; the real value is always shown in the readouts.</div>';
+const aG=$('aG');STG.forEach(s=>aG.append(Object.assign(document.createElement('i'),{textContent:s})));
+function hud(){
+ $('hRs').textContent=fx(RSkm(),1)+' km';$('hRt').textContent=fx(tidal(+tyS.value).km,0)+' km';
+ $('hAb').textContent=bodies.filter(b=>P.some(p=>p.b===b.id)).length;
+ if(!trk)return;const b=trk,t=TY[b.ti],m=metrics(b);let s=stage(b,m);
+ if(b.q<=1&&s<5)s=m&&m.r<RS*2.5?0:s;
+ const kmR=m?m.r/RS*KM*b.Mbh:0,rm=kmR*1000,Mk=b.Mbh*SB,da=m?2*GG*Mk*(2*t.R*1000)/Math.pow(rm,3):0,rt=b.q*KM*b.Mbh,ratio=m?Math.pow(rt/Math.max(kmR,1e-9),3):0;
+ b.heat=m?clamp((m.sr-1)/3,0,1):1;b.peak=Math.max(b.peak||0,m?m.sr:0);
+ $('aS').textContent=t.n+' · black hole '+b.Mbh+' M☉ · '+(b.q<=1?'tidal radius is inside the horizon: swallowed whole':'tidal radius '+fx(b.q,1)+' R_s');
+ [...aG.children].forEach((e,i)=>e.classList.toggle('on',i===(b.q<=1&&s<5&&s>0?0:s)));
+ const rows=[['Distance from hole',m?fx(m.r/RS,2)+' R_s':'—'],['Distance (real)',m?fx(kmR,0)+' km':'—'],['True tidal radius',fx(rt,0)+' km'],['Tidal / self-gravity',m?fx(ratio,2):'—'],['Tidal accel. across body',m?fx(da/9.80665,2)+' g':'—'],['Stretch (length)',m?'×'+fx(m.sr,2):'—'],['Width (vs original)',m?'×'+fx(m.sp,2):'—'],['Peak stretch',fx(b.peak,2)],['Unbound debris',m&&s>=2?fx(m.ub*100,0)+' %':'—'],['Particles left',m?m.n+' / 230':'0 / 230']];
+ $('aR').innerHTML=rows.map(r=>`<div>${r[0]}<b>${r[1]}</b></div>`).join('');
+ $('aT').textContent=TXT[b.q<=1&&s<5&&s>0?0:s]+(b.q<=1&&s<5?' (Its true tidal radius is inside the horizon, so it falls in without being torn apart.)':'');
+}
+let last=0,hc=0;
+function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;step(dt*spd);draw();if((hc+=dt)>.12){hc=0;hud()}requestAnimationFrame(loop)}
+// controls
+function lab(){$('oM').textContent=Mbh+' M☉';$('oP').textContent=peri.toFixed(1)+' R_s';$('oV').textContent=Math.round(E*180/Math.PI)+'°';$('oS').textContent=spd.toFixed(1)+'×'}
+$('M').oninput=e=>{Mbh=+e.target.value;lab()};$('P').oninput=e=>{peri=+e.target.value;lab()};
+$('V').oninput=e=>{E=+e.target.value*Math.PI/180;lab()};$('S').oninput=e=>{spd=+e.target.value;lab()};
+$('cp').onchange=e=>comp=e.target.checked;$('sp').onclick=spawn;
+$('cl').onclick=()=>{P=[];bodies=[];trk=null;$('aS').textContent='Spawn a body to start tracking it.';$('aR').innerHTML='';$('aT').textContent='';[...aG.children].forEach(e=>e.classList.remove('on'))};
+addEventListener('resize',resize);resize();lab();hud();requestAnimationFrame(loop);
+</script></body></html>
