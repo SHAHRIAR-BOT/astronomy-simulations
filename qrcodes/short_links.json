@@ -1,0 +1,68 @@
+﻿[
+    {
+        "Id":  "00",
+        "Name":  "Master Portal",
+        "FullUrl":  "https://shahriar-bot.github.io/astronomy-simulations/",
+        "ShortUrl":  "https://tinyurl.com/astro-sim-portal"
+    },
+    {
+        "Id":  "01",
+        "Name":  "Chapter 6.1 (Fusion Core)",
+        "FullUrl":  "https://shahriar-bot.github.io/astronomy-simulations/nuclear-fusion.html",
+        "ShortUrl":  "https://tinyurl.com/sb-astro-fusion-core"
+    },
+    {
+        "Id":  "02",
+        "Name":  "Chapter 6.2 (Nucleosynthesis)",
+        "FullUrl":  "https://shahriar-bot.github.io/astronomy-simulations/nucleosynthesis.html",
+        "ShortUrl":  "https://tinyurl.com/astro-nucleosynthesis"
+    },
+    {
+        "Id":  "03",
+        "Name":  "Chapter 6.3 (Energy Transport)",
+        "FullUrl":  "https://shahriar-bot.github.io/astronomy-simulations/energy-transport.html",
+        "ShortUrl":  "https://tinyurl.com/astro-energy-transport"
+    },
+    {
+        "Id":  "04",
+        "Name":  "Black Hole Spaghettification",
+        "FullUrl":  "https://shahriar-bot.github.io/astronomy-simulations/black-hole.html",
+        "ShortUrl":  "https://tinyurl.com/astro-black-hole"
+    },
+    {
+        "Id":  "05",
+        "Name":  "Nearby White Dwarfs Sky",
+        "FullUrl":  "https://shahriar-bot.github.io/astronomy-simulations/nearby-white-dwarfs.html",
+        "ShortUrl":  "https://tinyurl.com/astro-white-dwarfs-sky"
+    },
+    {
+        "Id":  "06",
+        "Name":  "Neutron Star \u0026 Pulsar",
+        "FullUrl":  "https://shahriar-bot.github.io/astronomy-simulations/neutron-star.html",
+        "ShortUrl":  "https://tinyurl.com/astro-neutron-star"
+    },
+    {
+        "Id":  "07",
+        "Name":  "Solar Evolution \u0026 Red Giant",
+        "FullUrl":  "https://shahriar-bot.github.io/astronomy-simulations/red-giant.html",
+        "ShortUrl":  "https://tinyurl.com/astro-red-giant"
+    },
+    {
+        "Id":  "08",
+        "Name":  "Red Giants Sky Locator",
+        "FullUrl":  "https://shahriar-bot.github.io/astronomy-simulations/red-giants-sky.html",
+        "ShortUrl":  "https://tinyurl.com/astro-redgiants-sky"
+    },
+    {
+        "Id":  "09",
+        "Name":  "Supernova Simulator",
+        "FullUrl":  "https://shahriar-bot.github.io/astronomy-simulations/supernova.html",
+        "ShortUrl":  "https://tinyurl.com/sb-astro-supernova"
+    },
+    {
+        "Id":  "10",
+        "Name":  "White Dwarf Evolution",
+        "FullUrl":  "https://shahriar-bot.github.io/astronomy-simulations/white-dwarf.html",
+        "ShortUrl":  "https://tinyurl.com/astro-white-dwarf"
+    }
+]
