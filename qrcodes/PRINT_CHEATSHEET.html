@@ -2,283 +2,626 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Book QR Codes & Short Links - Cheatsheet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book QR Codes & Simulations Cheatsheet</title>
   <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #16a34a;
+      --success-bg: #f0fdf4;
+      --success-border: #bbf7d0;
+      --badge-bg: #eff6ff;
+      --badge-text: #1d4ed8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: system-ui, -apple-system, sans-serif;
-      margin: 24px;
-      background: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 32px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Top Control Bar (Hidden on Print) */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .title-area h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
       color: #0f172a;
     }
-    header {
-      margin-bottom: 28px;
+
+    .title-area p {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 4px;
     }
-    h1 { margin-bottom: 6px; font-size: 26px; }
-    p.sub { color: #64748b; margin: 0; font-size: 15px; }
+
+    .action-btns {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    .btn-outline {
+      background: #fff;
+      color: #334155;
+      border-color: #cbd5e1;
+    }
+    .btn-outline:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+    /* Instructions Box */
+    .instructions-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--primary);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-size: 13.5px;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .instructions-card strong { color: #0f172a; }
+
+    /* Grid Layout */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 22px;
     }
+
+    /* Simulation Card */
     .card {
-      background: #fff;
-      border: 1px solid #e2e8f0;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
       border-radius: 14px;
-      padding: 18px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      text-align: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
       break-inside: avoid;
+      page-break-inside: avoid;
+      transition: transform 0.15s, box-shadow 0.15s;
     }
+    .card:hover {
+      box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
     .badge {
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-      color: #0369a1;
-      background: #e0f2fe;
-      padding: 3px 10px;
-      border-radius: 999px;
-      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
     }
-    h2 { font-size: 16px; margin: 2px 0 10px; color: #1e293b; }
-    .qr-box {
-      width: 175px;
-      height: 175px;
-      margin: 8px 0 14px;
+
+    .badge.portal {
+      background: #fae8ff;
+      color: #86198f;
+    }
+
+    .item-id {
+      font-size: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 12px;
+      line-height: 1.35;
+    }
+
+    /* QR Code Display */
+    .qr-container {
+      width: 170px;
+      height: 170px;
+      margin: 0 auto 16px;
       padding: 8px;
-      background: #fff;
+      background: #ffffff;
       border: 1px solid #cbd5e1;
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .qr-box img {
+
+    .qr-container img {
       width: 100%;
       height: 100%;
       object-fit: contain;
+      display: block;
     }
-    .short-box {
-      background: #f0fdf4;
-      border: 1px dashed #86efac;
-      padding: 7px 12px;
+
+    /* Copy for Word Box */
+    .word-box {
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
       border-radius: 8px;
-      width: 100%;
-      box-sizing: border-box;
-      margin-bottom: 8px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      position: relative;
     }
-    .short-label {
-      font-size: 10.5px;
+
+    .word-label {
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-      color: #166534;
-      display: block;
-      margin-bottom: 2px;
+      color: #15803d;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
     }
-    .short-link {
+
+    .word-text {
+      font-size: 12.5px;
+      color: #166534;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+
+    .short-url-link {
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 13.5px;
       font-weight: 700;
       color: #15803d;
-      text-decoration: none;
+      text-decoration: underline;
     }
-    .short-link:hover { text-decoration: underline; }
-    .full-url {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    .copy-btn {
+      background: #15803d;
+      color: #ffffff;
+      border: none;
+      padding: 3px 8px;
+      border-radius: 4px;
       font-size: 11px;
-      color: #64748b;
-      word-break: break-all;
-      background: #f1f5f9;
-      padding: 5px 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: #166534; }
+    .copy-btn.copied { background: #047857; }
+
+    /* Download Links Footer */
+    .card-footer {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px dashed #e2e8f0;
+    }
+
+    .dl-btn {
+      flex: 1;
+      text-align: center;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 600;
       border-radius: 6px;
-      width: 100%;
-      box-sizing: border-box;
+      text-decoration: none;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      background: #f8fafc;
+      transition: all 0.15s;
     }
-    .files {
-      margin-top: 10px;
-      font-size: 11px;
-      color: #64748b;
+    .dl-btn:hover {
+      background: #e2e8f0;
+      color: #0f172a;
     }
+    .dl-btn.svg-btn {
+      border-color: #93c5fd;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+    .dl-btn.svg-btn:hover {
+      background: #dbeafe;
+    }
+
+    /* Print Stylesheet */
     @media print {
-      body { background: #fff; margin: 0; }
-      .grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
-      .card { box-shadow: none; border: 1px solid #cbd5e1; page-break-inside: avoid; }
+      body {
+        background: #ffffff;
+        padding: 0;
+        margin: 0;
+      }
+      .top-bar, .instructions-card, .copy-btn, .card-footer {
+        display: none !important;
+      }
+      .container {
+        max-width: 100%;
+        margin: 0;
+      }
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      .card {
+        box-shadow: none;
+        border: 1px solid #94a3b8;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        padding: 14px;
+      }
+      .qr-container {
+        width: 140px;
+        height: 140px;
+        border: 1px solid #64748b;
+      }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Book QR Codes & Short Links (Ready for Typesetting)</h1>
-    <p class="sub">Each card contains the vector QR code (.SVG), high-res PNG, and a memorable short link for readers to type manually.</p>
-  </header>
-
-  <div class="grid">
-    <!-- 00 -->
-    <div class="card">
-      <span class="badge">Master Portal</span>
-      <h2>All Simulations Directory</h2>
-      <div class="qr-box">
-        <img src="00-portal-all-simulations.svg" alt="Master Portal QR">
+  <div class="container">
+    <!-- Top Action Bar -->
+    <div class="top-bar">
+      <div class="title-area">
+        <h1>Astrophysics Book &bull; QR Code & Short Link Cheatsheet</h1>
+        <p>Clean printable companion for book typesetting &bull; Vector SVG and 1000px PNG files included</p>
       </div>
-      <div class="short-box">
-        <span class="short-label">Short link for readers:</span>
-        <a class="short-link" href="https://tinyurl.com/astro-sim-portal" target="_blank">tinyurl.com/astro-sim-portal</a>
+      <div class="action-btns">
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        <a class="btn btn-outline" href="../Book_QR_Codes_Package.zip" download>📦 Download All ZIP</a>
       </div>
-      <div class="full-url">https://shahriar-bot.github.io/astronomy-simulations/</div>
-      <div class="files">Print file: 00-portal-all-simulations.svg</div>
     </div>
 
-    <!-- 01 -->
-    <div class="card">
-      <span class="badge">Chapter 6.1</span>
-      <h2>Stellar Fusion Core</h2>
-      <div class="qr-box">
-        <img src="01-nuclear-fusion.svg" alt="Fusion QR">
+    <!-- Quick Tip Box -->
+    <div class="instructions-card">
+      <div>
+        <strong>💡 MS Word টিপ:</strong> প্রতিটি কার্ডের নিচে <strong>"Copy Caption"</strong> বাটনে ক্লিক করে সরাসরি Word-এ পেস্ট (Ctrl+V) করতে পারেন। আর ছবির জন্য <strong>"Download .SVG"</strong> ফাইলটি টেনে এনে Word-এ ছেড়ে দিন (আদর্শ সাইজ: 1.8 cm × 1.8 cm)।
       </div>
-      <div class="short-box">
-        <span class="short-label">Short link for readers:</span>
-        <a class="short-link" href="https://tinyurl.com/astro-fusion-core" target="_blank">tinyurl.com/astro-fusion-core</a>
-      </div>
-      <div class="full-url">https://shahriar-bot.github.io/astronomy-simulations/nuclear-fusion.html</div>
-      <div class="files">Print file: 01-nuclear-fusion.svg</div>
     </div>
 
-    <!-- 02 -->
-    <div class="card">
-      <span class="badge">Chapter 6.2</span>
-      <h2>Stellar Nucleosynthesis</h2>
-      <div class="qr-box">
-        <img src="02-nucleosynthesis.svg" alt="Nucleosynthesis QR">
-      </div>
-      <div class="short-box">
-        <span class="short-label">Short link for readers:</span>
-        <a class="short-link" href="https://tinyurl.com/astro-nucleosynthesis" target="_blank">tinyurl.com/astro-nucleosynthesis</a>
-      </div>
-      <div class="full-url">https://shahriar-bot.github.io/astronomy-simulations/nucleosynthesis.html</div>
-      <div class="files">Print file: 02-nucleosynthesis.svg</div>
-    </div>
+    <!-- The 11 Cards Grid -->
+    <div class="grid">
 
-    <!-- 03 -->
-    <div class="card">
-      <span class="badge">Chapter 6.3</span>
-      <h2>Stellar Energy Transport</h2>
-      <div class="qr-box">
-        <img src="03-energy-transport.svg" alt="Energy Transport QR">
+      <!-- 00. Master Portal -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge portal">Master Portal</span>
+          <span class="item-id">#00</span>
+        </div>
+        <div class="card-title">All Simulations Directory</div>
+        <div class="qr-container">
+          <img src="00-portal-all-simulations.svg" alt="Master Portal QR">
+        </div>
+        <div class="word-box">
+          <div class="word-label">
+            <span>Word Caption</span>
+            <button class="copy-btn" onclick="copyCaption(this, '📱 বইয়ের সব সিমুলেশন একসাথে দেখতে স্ক্যান করুন অথবা ব্রাউজারে টাইপ করুন: tinyurl.com/astro-sim-portal')">📋 Copy</button>
+          </div>
+          <div class="word-text">
+            📱 সব সিমুলেশন একসাথে দেখতে স্ক্যান করুন বা ব্রাউজারে লিখুন: <a class="short-url-link" href="https://tinyurl.com/astro-sim-portal" target="_blank">tinyurl.com/astro-sim-portal</a>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="dl-btn svg-btn" href="00-portal-all-simulations.svg" download>⬇️ SVG (Vector)</a>
+          <a class="dl-btn" href="00-portal-all-simulations.png" download>⬇️ PNG</a>
+        </div>
       </div>
-      <div class="short-box">
-        <span class="short-label">Short link for readers:</span>
-        <a class="short-link" href="https://tinyurl.com/astro-energy-transport" target="_blank">tinyurl.com/astro-energy-transport</a>
-      </div>
-      <div class="full-url">https://shahriar-bot.github.io/astronomy-simulations/energy-transport.html</div>
-      <div class="files">Print file: 03-energy-transport.svg</div>
-    </div>
 
-    <!-- 04 -->
-    <div class="card">
-      <span class="badge">Astrophysics</span>
-      <h2>Black Hole Spaghettification</h2>
-      <div class="qr-box">
-        <img src="04-black-hole.svg" alt="Black Hole QR">
+      <!-- 01. Fusion -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge">Chapter 6.1</span>
+          <span class="item-id">#01</span>
+        </div>
+        <div class="card-title">Stellar Fusion Core</div>
+        <div class="qr-container">
+          <img src="01-nuclear-fusion.svg" alt="Fusion QR">
+        </div>
+        <div class="word-box">
+          <div class="word-label">
+            <span>Word Caption</span>
+            <button class="copy-btn" onclick="copyCaption(this, '📱 নক্ষত্রের ফিউশন প্রক্রিয়া লাইভ দেখতে স্ক্যান করুন অথবা ভিজিট করুন: tinyurl.com/astro-fusion-core')">📋 Copy</button>
+          </div>
+          <div class="word-text">
+            📱 ফিউশন বিক্রিয়া লাইভ দেখতে স্ক্যান করুন বা লিখুন: <a class="short-url-link" href="https://tinyurl.com/astro-fusion-core" target="_blank">tinyurl.com/astro-fusion-core</a>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="dl-btn svg-btn" href="01-nuclear-fusion.svg" download>⬇️ SVG (Vector)</a>
+          <a class="dl-btn" href="01-nuclear-fusion.png" download>⬇️ PNG</a>
+        </div>
       </div>
-      <div class="short-box">
-        <span class="short-label">Short link for readers:</span>
-        <a class="short-link" href="https://tinyurl.com/astro-black-hole" target="_blank">tinyurl.com/astro-black-hole</a>
-      </div>
-      <div class="full-url">https://shahriar-bot.github.io/astronomy-simulations/black-hole.html</div>
-      <div class="files">Print file: 04-black-hole.svg</div>
-    </div>
 
-    <!-- 05 -->
-    <div class="card">
-      <span class="badge">Sky Locator</span>
-      <h2>Nearby White Dwarfs</h2>
-      <div class="qr-box">
-        <img src="05-nearby-white-dwarfs.svg" alt="White Dwarfs QR">
+      <!-- 02. Nucleosynthesis -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge">Chapter 6.2</span>
+          <span class="item-id">#02</span>
+        </div>
+        <div class="card-title">Stellar Nucleosynthesis</div>
+        <div class="qr-container">
+          <img src="02-nucleosynthesis.svg" alt="Nucleosynthesis QR">
+        </div>
+        <div class="word-box">
+          <div class="word-label">
+            <span>Word Caption</span>
+            <button class="copy-btn" onclick="copyCaption(this, '📱 ভারী মৌল তৈরির সিমুলেশন স্ক্যান করুন অথবা ব্রাউজারে লিখুন: tinyurl.com/astro-nucleosynthesis')">📋 Copy</button>
+          </div>
+          <div class="word-text">
+            📱 ভারী মৌল তৈরির সিমুলেশন দেখতে স্ক্যান করুন: <a class="short-url-link" href="https://tinyurl.com/astro-nucleosynthesis" target="_blank">tinyurl.com/astro-nucleosynthesis</a>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="dl-btn svg-btn" href="02-nucleosynthesis.svg" download>⬇️ SVG (Vector)</a>
+          <a class="dl-btn" href="02-nucleosynthesis.png" download>⬇️ PNG</a>
+        </div>
       </div>
-      <div class="short-box">
-        <span class="short-label">Short link for readers:</span>
-        <a class="short-link" href="https://tinyurl.com/astro-white-dwarfs-sky" target="_blank">tinyurl.com/astro-white-dwarfs-sky</a>
-      </div>
-      <div class="full-url">https://shahriar-bot.github.io/astronomy-simulations/nearby-white-dwarfs.html</div>
-      <div class="files">Print file: 05-nearby-white-dwarfs.svg</div>
-    </div>
 
-    <!-- 06 -->
-    <div class="card">
-      <span class="badge">Compact Objects</span>
-      <h2>Neutron Star & Pulsar</h2>
-      <div class="qr-box">
-        <img src="06-neutron-star.svg" alt="Neutron Star QR">
+      <!-- 03. Energy Transport -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge">Chapter 6.3</span>
+          <span class="item-id">#03</span>
+        </div>
+        <div class="card-title">Stellar Energy Transport</div>
+        <div class="qr-container">
+          <img src="03-energy-transport.svg" alt="Energy Transport QR">
+        </div>
+        <div class="word-box">
+          <div class="word-label">
+            <span>Word Caption</span>
+            <button class="copy-btn" onclick="copyCaption(this, '📱 নক্ষত্রের শক্তি পরিবহন সিমুলেশন স্ক্যান করুন অথবা ভিজিট করুন: tinyurl.com/astro-energy-transport')">📋 Copy</button>
+          </div>
+          <div class="word-text">
+            📱 শক্তি পরিবহন সিমুলেশন দেখতে স্ক্যান করুন বা লিখুন: <a class="short-url-link" href="https://tinyurl.com/astro-energy-transport" target="_blank">tinyurl.com/astro-energy-transport</a>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="dl-btn svg-btn" href="03-energy-transport.svg" download>⬇️ SVG (Vector)</a>
+          <a class="dl-btn" href="03-energy-transport.png" download>⬇️ PNG</a>
+        </div>
       </div>
-      <div class="short-box">
-        <span class="short-label">Short link for readers:</span>
-        <a class="short-link" href="https://tinyurl.com/astro-neutron-star" target="_blank">tinyurl.com/astro-neutron-star</a>
-      </div>
-      <div class="full-url">https://shahriar-bot.github.io/astronomy-simulations/neutron-star.html</div>
-      <div class="files">Print file: 06-neutron-star.svg</div>
-    </div>
 
-    <!-- 07 -->
-    <div class="card">
-      <span class="badge">Stellar Evolution</span>
-      <h2>Solar Evolution & Red Giant</h2>
-      <div class="qr-box">
-        <img src="07-red-giant.svg" alt="Red Giant QR">
+      <!-- 04. Black Hole -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge">Astrophysics</span>
+          <span class="item-id">#04</span>
+        </div>
+        <div class="card-title">Black Hole Spaghettification</div>
+        <div class="qr-container">
+          <img src="04-black-hole.svg" alt="Black Hole QR">
+        </div>
+        <div class="word-box">
+          <div class="word-label">
+            <span>Word Caption</span>
+            <button class="copy-btn" onclick="copyCaption(this, '📱 কৃষ্ণগহ্বরের জোয়ারি বল ও স্প্যাগেটিফিকেশন দেখতে স্ক্যান করুন: tinyurl.com/astro-black-hole')">📋 Copy</button>
+          </div>
+          <div class="word-text">
+            📱 কৃষ্ণগহ্বরের জোয়ারি বল দেখতে স্ক্যান করুন বা লিখুন: <a class="short-url-link" href="https://tinyurl.com/astro-black-hole" target="_blank">tinyurl.com/astro-black-hole</a>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="dl-btn svg-btn" href="04-black-hole.svg" download>⬇️ SVG (Vector)</a>
+          <a class="dl-btn" href="04-black-hole.png" download>⬇️ PNG</a>
+        </div>
       </div>
-      <div class="short-box">
-        <span class="short-label">Short link for readers:</span>
-        <a class="short-link" href="https://tinyurl.com/astro-red-giant" target="_blank">tinyurl.com/astro-red-giant</a>
-      </div>
-      <div class="full-url">https://shahriar-bot.github.io/astronomy-simulations/red-giant.html</div>
-      <div class="files">Print file: 07-red-giant.svg</div>
-    </div>
 
-    <!-- 08 -->
-    <div class="card">
-      <span class="badge">Sky Locator</span>
-      <h2>Red Giants Sky Locator</h2>
-      <div class="qr-box">
-        <img src="08-red-giants-sky.svg" alt="Red Giants Sky QR">
+      <!-- 05. White Dwarfs Sky -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge">Sky Locator</span>
+          <span class="item-id">#05</span>
+        </div>
+        <div class="card-title">Nearby White Dwarfs</div>
+        <div class="qr-container">
+          <img src="05-nearby-white-dwarfs.svg" alt="White Dwarfs Sky QR">
+        </div>
+        <div class="word-box">
+          <div class="word-label">
+            <span>Word Caption</span>
+            <button class="copy-btn" onclick="copyCaption(this, '📱 রাতের আকাশে নিকটবর্তী শ্বেত বামন খুঁজতে স্ক্যান করুন: tinyurl.com/astro-white-dwarfs-sky')">📋 Copy</button>
+          </div>
+          <div class="word-text">
+            📱 রাতের আকাশে শ্বেত বামন খুঁজতে স্ক্যান করুন: <a class="short-url-link" href="https://tinyurl.com/astro-white-dwarfs-sky" target="_blank">tinyurl.com/astro-white-dwarfs-sky</a>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="dl-btn svg-btn" href="05-nearby-white-dwarfs.svg" download>⬇️ SVG (Vector)</a>
+          <a class="dl-btn" href="05-nearby-white-dwarfs.png" download>⬇️ PNG</a>
+        </div>
       </div>
-      <div class="short-box">
-        <span class="short-label">Short link for readers:</span>
-        <a class="short-link" href="https://tinyurl.com/astro-redgiants-sky" target="_blank">tinyurl.com/astro-redgiants-sky</a>
-      </div>
-      <div class="full-url">https://shahriar-bot.github.io/astronomy-simulations/red-giants-sky.html</div>
-      <div class="files">Print file: 08-red-giants-sky.svg</div>
-    </div>
 
-    <!-- 09 -->
-    <div class="card">
-      <span class="badge">Core Collapse</span>
-      <h2>Supernova Core Collapse</h2>
-      <div class="qr-box">
-        <img src="09-supernova.svg" alt="Supernova QR">
+      <!-- 06. Neutron Star -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge">Compact Objects</span>
+          <span class="item-id">#06</span>
+        </div>
+        <div class="card-title">Neutron Star & Pulsar</div>
+        <div class="qr-container">
+          <img src="06-neutron-star.svg" alt="Neutron Star QR">
+        </div>
+        <div class="word-box">
+          <div class="word-label">
+            <span>Word Caption</span>
+            <button class="copy-btn" onclick="copyCaption(this, '📱 নিউট্রন স্টার ও পালসার লাইটহাউস দেখতে স্ক্যান করুন: tinyurl.com/astro-neutron-star')">📋 Copy</button>
+          </div>
+          <div class="word-text">
+            📱 নিউট্রন স্টার ও পালসার লাইভ দেখতে স্ক্যান করুন: <a class="short-url-link" href="https://tinyurl.com/astro-neutron-star" target="_blank">tinyurl.com/astro-neutron-star</a>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="dl-btn svg-btn" href="06-neutron-star.svg" download>⬇️ SVG (Vector)</a>
+          <a class="dl-btn" href="06-neutron-star.png" download>⬇️ PNG</a>
+        </div>
       </div>
-      <div class="short-box">
-        <span class="short-label">Short link for readers:</span>
-        <a class="short-link" href="https://tinyurl.com/sb-astro-supernova" target="_blank">tinyurl.com/sb-astro-supernova</a>
-      </div>
-      <div class="full-url">https://shahriar-bot.github.io/astronomy-simulations/supernova.html</div>
-      <div class="files">Print file: 09-supernova.svg</div>
-    </div>
 
-    <!-- 10 -->
-    <div class="card">
-      <span class="badge">Stellar Remnants</span>
-      <h2>White Dwarf Evolution</h2>
-      <div class="qr-box">
-        <img src="10-white-dwarf.svg" alt="White Dwarf QR">
+      <!-- 07. Red Giant -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge">Stellar Evolution</span>
+          <span class="item-id">#07</span>
+        </div>
+        <div class="card-title">Solar Evolution & Red Giant</div>
+        <div class="qr-container">
+          <img src="07-red-giant.svg" alt="Red Giant QR">
+        </div>
+        <div class="word-box">
+          <div class="word-label">
+            <span>Word Caption</span>
+            <button class="copy-btn" onclick="copyCaption(this, '📱 সূর্যের ভবিষ্যৎ রক্তিম রূপ সিমুলেশন দেখতে স্ক্যান করুন: tinyurl.com/astro-red-giant')">📋 Copy</button>
+          </div>
+          <div class="word-text">
+            📱 সূর্যের ভবিষ্যৎ লোহিত রূপ দেখতে স্ক্যান করুন: <a class="short-url-link" href="https://tinyurl.com/astro-red-giant" target="_blank">tinyurl.com/astro-red-giant</a>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="dl-btn svg-btn" href="07-red-giant.svg" download>⬇️ SVG (Vector)</a>
+          <a class="dl-btn" href="07-red-giant.png" download>⬇️ PNG</a>
+        </div>
       </div>
-      <div class="short-box">
-        <span class="short-label">Short link for readers:</span>
-        <a class="short-link" href="https://tinyurl.com/astro-white-dwarf" target="_blank">tinyurl.com/astro-white-dwarf</a>
+
+      <!-- 08. Red Giants Sky -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge">Sky Locator</span>
+          <span class="item-id">#08</span>
+        </div>
+        <div class="card-title">Red Giants Sky Locator</div>
+        <div class="qr-container">
+          <img src="08-red-giants-sky.svg" alt="Red Giants Sky QR">
+        </div>
+        <div class="word-box">
+          <div class="word-label">
+            <span>Word Caption</span>
+            <button class="copy-btn" onclick="copyCaption(this, '📱 কালপুরুষ ও বিভিন্ন রাশিতে তারা খুঁজতে স্ক্যান করুন: tinyurl.com/astro-redgiants-sky')">📋 Copy</button>
+          </div>
+          <div class="word-text">
+            📱 আকাশে বেটেলজিউস ও রোহিণী খুঁজতে স্ক্যান করুন: <a class="short-url-link" href="https://tinyurl.com/astro-redgiants-sky" target="_blank">tinyurl.com/astro-redgiants-sky</a>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="dl-btn svg-btn" href="08-red-giants-sky.svg" download>⬇️ SVG (Vector)</a>
+          <a class="dl-btn" href="08-red-giants-sky.png" download>⬇️ PNG</a>
+        </div>
       </div>
-      <div class="full-url">https://shahriar-bot.github.io/astronomy-simulations/white-dwarf.html</div>
-      <div class="files">Print file: 10-white-dwarf.svg</div>
+
+      <!-- 09. Supernova -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge">Core Collapse</span>
+          <span class="item-id">#09</span>
+        </div>
+        <div class="card-title">Supernova Core Collapse</div>
+        <div class="qr-container">
+          <img src="09-supernova.svg" alt="Supernova QR">
+        </div>
+        <div class="word-box">
+          <div class="word-label">
+            <span>Word Caption</span>
+            <button class="copy-btn" onclick="copyCaption(this, '📱 সুপারনোভা বিস্ফোরণ লাইভ দেখতে স্ক্যান করুন অথবা লিখুন: tinyurl.com/sb-astro-supernova')">📋 Copy</button>
+          </div>
+          <div class="word-text">
+            📱 সুপারনোভা বিস্ফোরণ লাইভ দেখতে স্ক্যান করুন: <a class="short-url-link" href="https://tinyurl.com/sb-astro-supernova" target="_blank">tinyurl.com/sb-astro-supernova</a>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="dl-btn svg-btn" href="09-supernova.svg" download>⬇️ SVG (Vector)</a>
+          <a class="dl-btn" href="09-supernova.png" download>⬇️ PNG</a>
+        </div>
+      </div>
+
+      <!-- 10. White Dwarf -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge">Stellar Remnants</span>
+          <span class="item-id">#10</span>
+        </div>
+        <div class="card-title">White Dwarf Evolution</div>
+        <div class="qr-container">
+          <img src="10-white-dwarf.svg" alt="White Dwarf QR">
+        </div>
+        <div class="word-box">
+          <div class="word-label">
+            <span>Word Caption</span>
+            <button class="copy-btn" onclick="copyCaption(this, '📱 শ্বেত বামনের চন্দ্রশেখর সীমা ও শীতলীকরণ দেখতে স্ক্যান করুন: tinyurl.com/astro-white-dwarf')">📋 Copy</button>
+          </div>
+          <div class="word-text">
+            📱 শ্বেত বামন নক্ষত্রের শীতলীকরণ দেখতে স্ক্যান করুন: <a class="short-url-link" href="https://tinyurl.com/astro-white-dwarf" target="_blank">tinyurl.com/astro-white-dwarf</a>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="dl-btn svg-btn" href="10-white-dwarf.svg" download>⬇️ SVG (Vector)</a>
+          <a class="dl-btn" href="10-white-dwarf.png" download>⬇️ PNG</a>
+        </div>
+      </div>
+
     </div>
   </div>
+
+  <script>
+    function copyCaption(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const original = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 1800);
+      });
+    }
+  </script>
 </body>
 </html>
