@@ -1,0 +1,200 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Solar Seesaw — Barycenter Lab</title>
+<style>
+:root{--bg:#07111f;--panel:#101e31;--panel2:#13243a;--text:#edf5ff;--muted:#a8bbd2;--line:#29415d;--cyan:#69d8ff;--gold:#ffd166;--pluto:#b6c8d8;--charon:#f1a77b;--green:#86e3b1}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#142b47 0,#07111f 55%);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{-webkit-overflow-scrolling:touch;padding-bottom:50px;max-width:1180px;margin:auto;padding:24px 18px 40px}.eyebrow{color:var(--cyan);font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;font-weight:800}
+h1{font-size:clamp(2rem,5vw,3.6rem);line-height:1.03;margin:.35rem 0 1rem;letter-spacing:-.04em}h2{font-size:1.15rem;margin:0 0 12px}p{margin:.4rem 0;color:var(--muted)}.intro{max-width:760px;font-size:1.04rem}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0 14px}.tab,button,select,input{font:inherit}.tab,button{border:1px solid var(--line);background:#14263c;color:var(--text);border-radius:11px;padding:10px 14px;cursor:pointer}.tab[aria-selected=true],button.primary{background:var(--cyan);color:#061321;border-color:var(--cyan);font-weight:800}.tab:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:14px}.panel{background:linear-gradient(145deg,rgba(19,36,58,.97),rgba(10,24,41,.97));border:1px solid var(--line);border-radius:18px;padding:17px;min-width:0}.scene-head{display:flex;align-items:start;justify-content:space-between;gap:12px}.pill{font-size:.75rem;color:var(--green);border:1px solid #315d57;border-radius:99px;padding:4px 9px;white-space:nowrap}
+canvas{touch-action:pan-y;width:100%;height:auto;display:block;border-radius:12px;background:#081525;border:1px solid #203a56;margin:12px 0}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}.control{background:#0b192b;border:1px solid #203750;border-radius:12px;padding:10px}.control label{display:flex;justify-content:space-between;gap:8px;font-weight:650;font-size:.9rem}.control output{color:var(--gold);font-variant-numeric:tabular-nums}.control input{width:100%;margin-top:8px;accent-color:var(--cyan)}.buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.small{font-size:.83rem}.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.stat{padding:12px;border:1px solid var(--line);border-radius:12px;background:#0a1829}.stat .label{color:var(--muted);font-size:.78rem}.stat strong{display:block;font-size:1.12rem;margin-top:3px}.formula{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#081525;padding:10px;border-radius:9px;color:#cceeff;overflow-wrap:anywhere}.lesson{margin-top:14px}.lesson ul{margin:8px 0 0;padding-left:20px;color:var(--muted)}.lesson li{margin:5px 0}.compare{width:100%;border-collapse:collapse;font-size:.88rem;margin-top:10px}.compare th,.compare td{padding:9px 8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}.compare th{color:var(--cyan)}.compare tr:last-child td{border-bottom:0}.quiz-q{font-weight:750;margin:12px 0}.quiz-options{display:grid;gap:7px}.quiz-options button{text-align:left}.feedback{min-height:24px;margin-top:8px;font-weight:700}.footer{color:#7f96b0;font-size:.78rem;margin-top:16px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.wrap{-webkit-overflow-scrolling:touch;padding-bottom:50px;padding:18px 12px 30px}.controls{grid-template-columns:1fr 1fr}.panel{padding:13px}.compare{font-size:.8rem}.compare th,.compare td{padding:7px 5px}}
+@media(max-width:420px){.controls{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.tab{padding:8px 10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Interactive astronomy lesson · Barycenter Lab</div>
+  <h1>The Solar Seesaw</h1>
+  <p class="intro">A seesaw balances around a point that shifts toward the heavier side. In space, two bodies move around their shared <b>barycenter</b>—the center of mass of the system. Explore how the balance point changes from Earth–Moon to Sun–Jupiter to Pluto–Charon.</p>
+
+  <div class="tabs" role="tablist" aria-label="Choose a system">
+    <button class="tab" role="tab" aria-selected="true" data-system="earth">Earth–Moon</button>
+    <button class="tab" role="tab" aria-selected="false" data-system="sun">Sun–Jupiter</button>
+    <button class="tab" role="tab" aria-selected="false" data-system="pluto">Pluto–Charon</button>
+    <button class="tab" role="tab" aria-selected="false" data-system="custom">Build your own</button>
+  </div>
+
+  <div class="layout">
+    <section class="panel">
+      <div class="scene-head"><div><h2 id="sceneTitle">Earth–Moon system</h2><p id="sceneSubtitle" class="small">The barycenter is inside Earth.</p></div><span class="pill">Not to scale</span></div>
+      <canvas id="space" width="900" height="430" aria-label="Animated diagram of two bodies moving around their barycenter"></canvas>
+      <div class="controls">
+        <div class="control"><label for="massA"><span id="nameALabel">Earth mass</span><output id="massAOut">1.00</output></label><input id="massA" type="range" min="1" max="100" value="81" step="1"></div>
+        <div class="control"><label for="massB"><span id="nameBLabel">Moon mass</span><output id="massBOut">1.00</output></label><input id="massB" type="range" min="1" max="100" value="1" step="1"></div>
+        <div class="control"><label for="distance"><span>Distance between bodies</span><output id="distanceOut">100 units</output></label><input id="distance" type="range" min="80" max="300" value="180" step="5"></div>
+        <div class="control"><label for="speed"><span>Animation speed</span><output id="speedOut">1.0×</output></label><input id="speed" type="range" min="0" max="20" value="8" step="1"></div>
+      </div>
+      <div class="buttons"><button class="primary" id="playBtn">Pause motion</button><button id="resetBtn">Reset system</button><button id="showBtn">Show barycenter</button></div>
+      <p class="small">The diagram shows the relative positions and the shared center of mass. Body sizes and orbital distances are illustrative, not to scale.</p>
+    </section>
+
+    <aside class="panel">
+      <h2>Live barycenter readout</h2>
+      <p>For two bodies on a line, measure from the center of body A toward body B:</p>
+      <div class="formula">r<sub>A</sub> = d × m<sub>B</sub> / (m<sub>A</sub> + m<sub>B</sub>)</div>
+      <div class="stats">
+        <div class="stat"><span class="label">Mass ratio (A : B)</span><strong id="ratio">81 : 1</strong></div>
+        <div class="stat"><span class="label">Barycenter from A</span><strong id="fromA">2.2% of d</strong></div>
+        <div class="stat"><span class="label">Barycenter from B</span><strong id="fromB">97.8% of d</strong></div>
+        <div class="stat"><span class="label">Location</span><strong id="location">Inside body A</strong></div>
+      </div>
+      <div class="lesson">
+        <h2>What to notice</h2>
+        <ul id="observations">
+          <li>The more massive body moves in a smaller circle.</li>
+          <li>The barycenter is inside Earth, not exactly at Earth's center.</li>
+          <li>Both bodies orbit the same point.</li>
+        </ul>
+      </div>
+      <div class="lesson"><h2>Try this</h2><p id="challenge">Make the Moon more massive and watch the barycenter move away from Earth.</p></div>
+    </aside>
+  </div>
+
+  <section class="panel lesson">
+    <h2>Compare the three real systems</h2>
+    <table class="compare">
+      <thead><tr><th>System</th><th>Mass comparison</th><th>Barycenter location</th><th>Main idea</th></tr></thead>
+      <tbody>
+        <tr><td><b>Earth–Moon</b></td><td>Earth ≈ 81× Moon</td><td>Inside Earth</td><td>Earth makes a small wobble as the Moon orbits the shared center of mass.</td></tr>
+        <tr><td><b>Sun–Jupiter</b></td><td>Sun ≈ 1,047× Jupiter</td><td>Inside the Sun, relatively close to its center</td><td>The Sun also moves; Jupiter does not orbit a perfectly stationary Sun.</td></tr>
+        <tr><td><b>Pluto–Charon</b></td><td>Pluto ≈ 8.2× Charon</td><td>Outside Pluto, between the bodies</td><td>Both bodies orbit a point outside Pluto. The pair is often described as a binary-like system.</td></tr>
+      </tbody>
+    </table>
+    <p class="small">These ratios are approximate. Real multi-body systems are more complex because other bodies also affect the center of mass.</p>
+  </section>
+
+  <section class="panel lesson">
+    <h2>Quick check</h2>
+    <p>Choose the best answer. You can try again if you miss it.</p>
+    <div class="quiz-q" id="quizQuestion">If two bodies have equal masses, where is their barycenter?</div>
+    <div class="quiz-options" id="quizOptions">
+      <button data-correct="false">At the center of the heavier body</button>
+      <button data-correct="true">Halfway between them</button>
+      <button data-correct="false">Always outside both bodies</button>
+    </div>
+    <div class="feedback" id="feedback" aria-live="polite"></div>
+    <div class="buttons"><button id="nextQuiz">Next question</button></div>
+  </section>
+  <p class="footer">Barycenter Lab · Offline-ready single HTML file · Educational diagram, not a precision orbital simulator.</p>
+</div>
+<script>
+const systems = {
+ earth:{title:"Earth–Moon system",subtitle:"The barycenter is inside Earth.",a:"Earth",b:"Moon",ma:81,mb:1,d:180,challenge:"Increase the Moon's mass. The barycenter should move farther from Earth's center.",note:"Earth is about 81 times more massive than the Moon."},
+ sun:{title:"Sun–Jupiter system",subtitle:"The barycenter is inside the Sun, but the Sun still moves.",a:"Sun",b:"Jupiter",ma:1047,mb:1,d:250,challenge:"Notice that the Sun's motion is small, but not zero. The other planets also affect the real Solar System barycenter.",note:"The Sun is about 1,047 times more massive than Jupiter."},
+ pluto:{title:"Pluto–Charon system",subtitle:"The barycenter lies outside Pluto's surface.",a:"Pluto",b:"Charon",ma:8.2,mb:1,d:180,challenge:"Lower Pluto's mass or raise Charon's mass and watch the balance point move toward the middle.",note:"Pluto is about 8.2 times more massive than Charon."},
+ custom:{title:"Build your own system",subtitle:"Change the masses and separation to explore.",a:"Body A",b:"Body B",ma:5,mb:2,d:180,challenge:"Try equal masses first, then make one body much heavier.",note:"This simplified two-body model lets you experiment."}
+};
+const canvas=document.getElementById("space"),ctx=canvas.getContext("2d");
+const el=id=>document.getElementById(id);
+let current="earth",playing=true,showBary=true,angle=0,last=0,quizIndex=0;
+const quizzes=[
+ {q:"If two bodies have equal masses, where is their barycenter?",opts:["At the center of the heavier body","Halfway between them","Always outside both bodies"],correct:1,why:"Equal masses balance exactly halfway between their centers."},
+ {q:"If body A becomes much more massive, what happens to the barycenter?",opts:["It moves closer to A","It moves closer to B","It stays exactly in the middle"],correct:0,why:"The barycenter shifts toward the more massive body."},
+ {q:"Where is the Sun–Jupiter barycenter?",opts:["Inside Jupiter","Inside the Sun","Exactly halfway between them"],correct:1,why:"The Sun is about 1,047 times more massive than Jupiter."},
+ {q:"What is unusual about Pluto and Charon?",opts:["They do not exert gravity on each other","Their barycenter lies outside Pluto","Charon is more massive than Pluto"],correct:1,why:"Charon is relatively massive, so their shared barycenter lies outside Pluto."},
+ {q:"Does the heavier body move at all?",opts:["No, never","Yes; it moves around the barycenter too","Only if the masses are equal"],correct:1,why:"Both bodies orbit the common barycenter; the heavier one traces a smaller path."}
+];
+function fmt(n){return Number(n.toFixed(2)).toLocaleString("en-US",{maximumFractionDigits:2});}
+function loadSystem(key){
+ current=key;const s=systems[key];
+ document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.system===key)));
+ el("sceneTitle").textContent=s.title;el("sceneSubtitle").textContent=s.subtitle;
+ el("nameALabel").textContent=s.a+" mass";el("nameBLabel").textContent=s.b+" mass";
+ // Normalize values to readable sliders while preserving ratios approximately.
+ if(key==="earth"){el("massA").value=81;el("massB").value=1;el("massA").min=1;el("massA").max=200;el("massB").min=1;el("massB").max=100;}
+ if(key==="sun"){el("massA").value=200;el("massB").value=1;el("massA").min=1;el("massA").max=200;el("massB").min=1;el("massB").max=100;}
+ if(key==="pluto"){el("massA").value=82;el("massB").value=10;el("massA").min=1;el("massA").max=200;el("massB").min=1;el("massB").max=100;}
+ if(key==="custom"){el("massA").value=5;el("massB").value=2;el("massA").min=1;el("massA").max=200;el("massB").min=1;el("massB").max=100;}
+ el("distance").value=s.d;el("challenge").textContent=s.challenge;
+ update();
+}
+function getMasses(){
+ if(current==="earth")return [Number(el("massA").value),Number(el("massB").value)];
+ if(current==="sun")return [Number(el("massA").value)*1047/200,Number(el("massB").value)];
+ if(current==="pluto")return [Number(el("massA").value)*8.2/82,Number(el("massB").value)/10];
+ return [Number(el("massA").value),Number(el("massB").value)];
+}
+function update(){
+ const [ma,mb]=getMasses(),d=Number(el("distance").value),rA=d*mb/(ma+mb),rB=d*ma/(ma+mb);
+ el("massAOut").textContent=fmt(ma);el("massBOut").textContent=fmt(mb);
+ el("distanceOut").textContent=d+" units";el("speedOut").textContent=(Number(el("speed").value)/8).toFixed(1)+"×";
+ el("ratio").textContent=fmt(ma)+" : "+fmt(mb);
+ el("fromA").textContent=fmt(100*rA/d)+"% of d";el("fromB").textContent=fmt(100*rB/d)+"% of d";
+ let loc;
+ if(rA<d*.5 && rA<50)loc="Near body A";
+ else if(rA<d*.5)loc="A side of midpoint";
+ else loc="B side of midpoint";
+ if(current==="pluto" && rA>50)loc="Between the bodies";
+ // For physical system tabs, state the surface location correctly for the preset ratio.
+ if(current==="earth"||current==="sun")loc="Inside "+systems[current].a;
+ if(current==="pluto")loc="Outside Pluto";
+ if(current==="custom")loc=rA<d*.5?"Closer to body A":rA>d*.5?"Closer to body B":"Midpoint";
+ el("location").textContent=loc;
+ const obs=[];
+ obs.push("Both bodies move around the shared barycenter.");
+ obs.push((ma>mb?"Body A":"Body B")+" is more massive and moves on the smaller path.");
+ obs.push("The barycenter is "+(rA<d*.5?"closer to body A":rA>d*.5?"closer to body B":"exactly halfway between the two bodies")+".");
+ if(current==="pluto")obs.push("For Pluto–Charon, the barycenter is outside Pluto's surface.");
+ el("observations").innerHTML=obs.map(x=>"<li>"+x+"</li>").join("");
+ draw(ma,mb,d,rA,rB);
+}
+function draw(ma,mb,d,rA,rB){
+ const w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);
+ // starfield
+ for(let i=0;i<95;i++){let x=(i*137+41)%w,y=(i*71+17)%h;ctx.fillStyle=i%5===0?"#6ca5ca":"#405b78";ctx.globalAlpha=.25+(i%4)*.15;ctx.beginPath();ctx.arc(x,y,(i%3)+.5,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
+ const cx=w/2,cy=h/2+5,pxPerUnit=Math.min(2.0,(w-220)/d),sep=d*pxPerUnit;
+ const xA=cx-sep*mb/(ma+mb),xB=cx+sep*ma/(ma+mb);
+ // Use actual barycenter centered at cx; both bodies orbit in opposite directions around it.
+ const orbitA=sep*mb/(ma+mb),orbitB=sep*ma/(ma+mb);
+ const aX=cx-orbitA*Math.cos(angle),aY=cy-orbitA*.35*Math.sin(angle);
+ const bX=cx+orbitB*Math.cos(angle),bY=cy+orbitB*.35*Math.sin(angle);
+ // orbit ellipses
+ ctx.setLineDash([5,7]);ctx.lineWidth=2;ctx.strokeStyle="#42617f";
+ ctx.beginPath();ctx.ellipse(cx,cy,Math.max(orbitA,4),Math.max(orbitA*.35,3),0,0,Math.PI*2);ctx.stroke();
+ ctx.beginPath();ctx.ellipse(cx,cy,Math.max(orbitB,4),Math.max(orbitB*.35,3),0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+ // connector line
+ ctx.strokeStyle="#5d7691";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(aX,aY);ctx.lineTo(bX,bY);ctx.stroke();
+ // barycenter
+ if(showBary){ctx.fillStyle="#ffd166";ctx.beginPath();ctx.arc(cx,cy,6,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#ffd166";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,12,0,Math.PI*2);ctx.stroke();ctx.fillStyle="#ffd166";ctx.font="bold 17px system-ui";ctx.textAlign="center";ctx.fillText("Barycenter",cx,cy-22);}
+ // body radius is illustrative, gently mass scaled but capped
+ function body(x,y,m,color,label,scale){
+   const r=Math.max(9,Math.min(48,12+Math.sqrt(m)*scale));
+   const grad=ctx.createRadialGradient(x-r*.35,y-r*.4,2,x,y,r);grad.addColorStop(0,"#ffffff");grad.addColorStop(.18,color);grad.addColorStop(1,"#152b43");
+   ctx.fillStyle=grad;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+   ctx.strokeStyle=color;ctx.globalAlpha=.65;ctx.lineWidth=2;ctx.stroke();ctx.globalAlpha=1;
+   ctx.fillStyle="#edf5ff";ctx.font="bold 17px system-ui";ctx.textAlign="center";ctx.fillText(label,x,y+r+24);
+   ctx.fillStyle="#a8bbd2";ctx.font="13px system-ui";ctx.fillText("mass "+fmt(m),x,y+r+43);
+ }
+ body(aX,aY,ma,current==="sun"?"#ffd166":current==="pluto"?"#b6c8d8":"#58b8ff",systems[current].a,2.0);
+ body(bX,bY,mb,current==="pluto"?"#f1a77b":"#a7e4ce",systems[current].b,5.5);
+ ctx.textAlign="left";ctx.fillStyle="#7e9bb8";ctx.font="13px system-ui";ctx.fillText("Illustrative motion · not to scale",18,h-18);
+}
+function frame(t){if(!last)last=t;const dt=Math.min(50,t-last);last=t;if(playing){angle+=dt*.00055*Number(el("speed").value);draw(...getMasses(),Number(el("distance").value),0,0);}requestAnimationFrame(frame);}
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>loadSystem(b.dataset.system)));
+["massA","massB","distance","speed"].forEach(id=>el(id).addEventListener("input",update));
+el("playBtn").addEventListener("click",()=>{playing=!playing;el("playBtn").textContent=playing?"Pause motion":"Resume motion";});
+el("resetBtn").addEventListener("click",()=>loadSystem(current));
+el("showBtn").addEventListener("click",()=>{showBary=!showBary;el("showBtn").textContent=showBary?"Hide barycenter":"Show barycenter";update();});
+function renderQuiz(){const q=quizzes[quizIndex];el("quizQuestion").textContent=q.q;el("feedback").textContent="";el("quizOptions").innerHTML="";q.opts.forEach((opt,i)=>{const b=document.createElement("button");b.textContent=opt;b.addEventListener("click",()=>{el("feedback").textContent=i===q.correct?"Correct! "+q.why:"Not quite. Try again. Think about where the masses balance.";el("feedback").style.color=i===q.correct?"#86e3b1":"#ffd166";});el("quizOptions").appendChild(b);});}
+el("nextQuiz").addEventListener("click",()=>{quizIndex=(quizIndex+1)%quizzes.length;renderQuiz();});
+function animate(){if(playing)angle+=.012*(Number(el("speed").value)/8);const [ma,mb]=getMasses(),d=Number(el("distance").value),rA=d*mb/(ma+mb),rB=d*ma/(ma+mb);draw(ma,mb,d,rA,rB);requestAnimationFrame(animate);}
+loadSystem("earth");renderQuiz();animate();
+</script>
+</body>
+</html>
