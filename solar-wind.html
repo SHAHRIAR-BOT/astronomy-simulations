@@ -1,0 +1,129 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Solar Wind and the Invisible Umbrella</title>
+<style>
+:root{--bg:#eceef3;--fg:#161a2b;--mut:#565d7a;--btn:#d6dae9;--on:#e8782a;--onfg:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#070a14;--fg:#e8eaf4;--mut:#9aa2c2;--btn:#1a2040;--on:#f08a2c;--onfg:#120a02}}
+:root[data-theme="dark"]{--bg:#070a14;--fg:#e8eaf4;--mut:#9aa2c2;--btn:#1a2040;--on:#f08a2c;--onfg:#120a02}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:880px;margin:0 auto;padding:20px 16px 32px}
+h1{font:600 clamp(1.5rem,4vw,2.1rem)/1.2 Georgia,"Times New Roman",serif;margin:0 0 4px}
+h2{font:600 1.2rem/1.3 Georgia,serif;margin:14px 0 4px}
+.sub{color:var(--mut);margin:0 0 14px}
+canvas{width:100%;height:auto;display:block;border-radius:10px;background:#0b1020}
+.tabs,.row{display:flex;flex-wrap:wrap;gap:8px}
+.tabs{margin-bottom:10px}
+button{font:inherit;color:var(--fg);background:var(--btn);border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
+button[aria-pressed="true"]{background:var(--on);color:var(--onfg);font-weight:600}
+button:focus-visible,input:focus-visible{outline:3px solid var(--on);outline-offset:2px}
+.cap{margin:0 0 12px;max-width:68ch;color:var(--mut)}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 22px;align-items:end;margin-top:14px}
+label{display:block;font-size:.92rem;color:var(--mut)}
+label b{color:var(--fg);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--on)}
+#note{margin-top:12px;min-height:3em;max-width:70ch}
+.rem{margin-top:18px;padding:12px 14px;border-left:4px solid var(--on);background:var(--btn);border-radius:0 8px 8px 0;max-width:70ch}
+.rem p{margin:0 0 6px}
+
+  /* Mobile Touch Responsiveness Enhancement */
+  canvas { touch-action: pan-y; }
+  body { -webkit-overflow-scrolling: touch; }
+</style>
+</head>
+<body>
+<main>
+<h1>The solar wind and the invisible umbrella</h1>
+<p class="sub">Side view of Earth’s magnetosphere, with the Sun on the left. Step through the five stages, then push on the shield yourself.</p>
+<div class="tabs" id="tabs"></div>
+<h2 id="st"></h2>
+<p class="cap" id="cap"></p>
+<canvas id="c" width="800" height="520" role="img" aria-label="Side view of the solar wind flowing around Earth's magnetosphere, with bow shock, magnetotail and auroras"></canvas>
+<div class="ctl">
+<label>Solar wind strength:<b id="vw"> 1</b><input type="range" id="wind" min="0.3" max="2.2" step="0.05" value="1"></label>
+<label>Earth’s magnetic field:<b id="vs"> 1</b><input type="range" id="shield" min="0" max="1.5" step="0.05" value="1"></label>
+<div class="row"><button id="gust">Solar gust</button><button id="rest">Restore atmosphere</button><button id="pause" aria-pressed="false">Pause</button></div>
+</div>
+<div id="note" aria-live="polite"></div>
+<div class="rem">
+<p><strong>Remember:</strong> Solar wind → interaction with Earth’s magnetic field → particle deflection → protection of Earth’s space environment.</p>
+<p><strong>Fun fact:</strong> the magnetosphere is much larger than Earth, and its shape changes with the strength and direction of the solar wind. Try the gust button.</p>
+</div>
+</main>
+<script>
+const cv=document.getElementById("c"),g=cv.getContext("2d"),W=800,H=520,cx=290,cy=260,R=38,AL=.55,TAU=6.2832;
+const dpr=Math.min(2,devicePixelRatio||1);cv.width=W*dpr;cv.height=H*dpr;g.scale(dpr,dpr);
+const $=id=>document.getElementById(id),rnd=Math.random;
+const V={wind:1,shield:1};let step=1,gust=0,paused=matchMedia("(prefers-reduced-motion: reduce)").matches,last=performance.now();
+const SW=[],ATM=[],aur=[0,0];let dose=0,rmp=0,bsR=0,MP=null,BS=null;
+const T=[
+["1. The wind approaches","The Sun releases a steady stream of electrons and protons from its hot corona, moving at hundreds of kilometers per second. This step shows the wind with the magnetic field switched off, so you can see what it does alone: it reaches the upper atmosphere, and over a very long time gas particles can escape into space."],
+["2. The shield meets the wind","The solar wind meets Earth’s magnetic field. A boundary called the bow shock forms upstream, where the wind is slowed and disturbed."],
+["3. Many particles are deflected","The magnetic field bends the paths of charged particles, so many flow around the magnetosphere instead of toward the atmosphere. The Sun-facing side is compressed, and the far side stretches into the magnetotail."],
+["4. Some enter near the poles","Not every particle is blocked. Some travel along magnetic field lines into the upper atmosphere, especially near the polar regions."],
+["5. Auroras","Energetic particles collide with gases in the upper atmosphere, and the gases give off light. That glow is an aurora."]];
+const tabs=$("tabs");
+T.forEach((t,i)=>{const b=document.createElement("button");b.textContent="Step "+(i+1);b.onclick=()=>{step=i+1;ui();if(paused)render();};tabs.appendChild(b);});
+function ui(){[...tabs.children].forEach((b,i)=>b.setAttribute("aria-pressed",i+1===step));$("st").textContent=T[step-1][0];$("cap").textContent=T[step-1][1];}
+function resetAtm(){ATM.length=0;SW.length=0;for(let i=0;i<150;i++)ATM.push({a:rnd()*TAU,r:R+3+rnd()*11,x:0,y:0,vx:0,vy:0,out:false});}
+resetAtm();
+$("wind").oninput=e=>{V.wind=+e.target.value;$("vw").textContent=" "+V.wind;if(paused)render();};
+$("shield").oninput=e=>{V.shield=+e.target.value;$("vs").textContent=" "+V.shield;if(paused)render();};
+$("gust").onclick=()=>gust=4;$("rest").onclick=()=>{resetAtm();if(paused)render();};
+$("pause").onclick=e=>{paused=!paused;e.target.setAttribute("aria-pressed",paused);e.target.textContent=paused?"Resume":"Pause";};
+if(paused){$("pause").setAttribute("aria-pressed","true");$("pause").textContent="Resume";}
+function tbl(s){const X=[],Hh=[];for(let t=0;t<=1.571;t+=.07){const r=s*Math.pow(2/(1+Math.cos(t)),AL);X.push(cx-r*Math.cos(t));Hh.push(r*Math.sin(t));}const h0=Hh[Hh.length-1];for(let x=cx+8;x<W+16;x+=8){X.push(x);Hh.push(h0*(1+.25*(1-Math.exp(-(x-cx)/(3*s)))));}return{X,H:Hh};}
+function hw(t,x){const X=t.X;if(x<X[0])return -1;if(x>=X[X.length-1])return t.H[X.length-1];let i=0;while(X[i+1]<x)i++;const f=(x-X[i])/(X[i+1]-X[i]||1);return t.H[i]+(t.H[i+1]-t.H[i])*f;}
+const eff=()=>V.wind*(1+Math.min(1,gust/4));
+function geom(){const sh=step===1?0:V.shield;rmp=sh<.05?0:Math.min(190,125*Math.cbrt(sh/(.4+.6*eff())));MP=rmp>14?tbl(rmp):null;BS=rmp>14?tbl(rmp*1.35):null;}
+function update(k){
+ gust=Math.max(0,gust-k/60);geom();const base=5*eff();
+ for(let n=0;n<6&&SW.length<480;n++)SW.push({x:-6,y:15+rnd()*(H-30),vx:base*(.9+.2*rnd()),vy:0,age:0,px:-6,py:0});
+ for(let i=SW.length-1;i>=0;i--){const q=SW[i];q.px=q.x;q.py=q.y;q.age+=k;let dead=false;
+  if(q.leak){const dx=q.tx-q.x,dy=q.ty-q.y,d=Math.hypot(dx,dy)||1;q.x+=(dx/d*2.8-dy/d*Math.sin(q.age*.4)*.9)*k;q.y+=(dy/d*2.8+dx/d*Math.sin(q.age*.4)*.9)*k;if(d<9){aur[q.sg<0?0:1]+=1;dead=true;}}
+  else{const ns=Math.ceil(Math.max(Math.abs(q.vx),1)*k/2.2),kk=k/ns;for(let s=0;s<ns&&!dead&&!q.leak;s++){
+   let sl=1;if(step>=2&&BS){const h=hw(BS,q.x);if(h>=0&&Math.abs(q.y-cy)<h){sl=.55;q.vy+=(rnd()-.5)*.2*kk;}}
+   q.vx+=(base*sl-q.vx)*.1*kk;
+   if(step>=3&&MP){const h=hw(MP,q.x);if(h>=0&&Math.abs(q.y-cy)<h){const sg=q.y>=cy?1:-1,sp=Math.max(q.vx,1.5),sl2=(hw(MP,q.x+6)-h)/6,m=Math.hypot(1,sl2);q.y=cy+sg*h;q.vx=sp/m;q.vy=sg*sl2*q.vx;
+     const rel=q.x-cx;if(step>=4&&rel<-.4*rmp&&rel>-.9*rmp&&rnd()<.02*kk*Math.min(1,V.shield)){q.leak=true;q.sg=sg;q.tx=cx;q.ty=cy+sg*R*.98;}}}
+   else q.vy*=.9;
+   q.x+=q.vx*kk;q.y+=q.vy*kk;
+   if(Math.hypot(q.x-cx,q.y-cy)<R+16){dead=true;dose+=1;if(rnd()<.3){const p=ATM[rnd()*ATM.length|0];if(p&&!p.out){p.out=true;p.vx=2+rnd()*1.5;p.vy=(rnd()-.5)*2;}}}
+  }}
+  if(q.x>W+20||q.y<-20||q.y>H+20||q.age>900)dead=true;
+  if(dead)SW.splice(i,1);}
+ dose*=Math.pow(.98,k);
+ for(const p of ATM){if(p.out){p.x+=p.vx*k;p.y+=p.vy*k;if(p.x>W+10||p.y<-10||p.y>H+10)p.gone=1;}else{p.a+=.0008*k;p.x=cx+p.r*Math.cos(p.a);p.y=cy+p.r*Math.sin(p.a);}}
+ aur[0]*=Math.pow(.985,k);aur[1]*=Math.pow(.985,k);
+}
+function txt(s,x,y,c,f,a){g.fillStyle=c||"#fff";g.font=f||"13px system-ui,sans-serif";g.textAlign=a||"left";g.fillText(s,x,y);g.textAlign="left";}
+function curve(t,sg){g.beginPath();t.X.forEach((x,i)=>{const y=cy+sg*t.H[i];i?g.lineTo(x,y):g.moveTo(x,y);});}
+function render(){
+ g.clearRect(0,0,W,H);geom();
+ const sg=g.createRadialGradient(0,H/2,0,0,H/2,230);sg.addColorStop(0,"rgba(255,200,90,.55)");sg.addColorStop(1,"rgba(255,200,90,0)");g.fillStyle=sg;g.fillRect(0,0,260,H);txt("Sun",10,H/2-6,"#ffe7a8");
+ if(step>=3&&MP){curve(MP,-1);for(let i=MP.X.length-1;i>=0;i--)g.lineTo(MP.X[i],cy+MP.H[i]);g.closePath();g.fillStyle="rgba(95,212,200,.07)";g.fill();}
+ if(step>=2&&MP){
+  g.lineWidth=1.5;const c=Math.min(1,rmp/125);
+  for(const L of [1.5,2,2.6]){const t0=Math.asin(Math.sqrt(1/L));g.beginPath();for(let t=t0;t<=Math.PI-t0+1e-6;t+=.04){const r=L*R*Math.sin(t)**2,dx=r*Math.sin(t),y=cy-r*Math.cos(t);const x=cx+(dx<0?dx*c:dx*(1+.6*Math.min(1,dx/(R*2.5))));t===t0?g.moveTo(x,y):g.lineTo(x,y);}g.strokeStyle="rgba(95,212,200,"+(.25+.4*Math.min(1,V.shield))+")";g.stroke();
+   g.beginPath();for(let t=t0;t<=Math.PI-t0+1e-6;t+=.04){const r=L*R*Math.sin(t)**2,dx=-r*Math.sin(t),y=cy-r*Math.cos(t);g.lineTo(cx+dx*c,y);}g.stroke();}
+  if(step>=3){g.strokeStyle="rgba(95,212,200,.28)";for(const sg2 of [-1,1])for(const o of [0,14]){g.beginPath();g.moveTo(cx+o*.3,cy+sg2*(R+o*.2));g.bezierCurveTo(cx+40,cy+sg2*(R+90),cx+160,cy+sg2*(MP?MP.H[MP.H.length-1]*.45:60),cx+430,cy+sg2*(MP?MP.H[MP.H.length-1]*.35:50));g.stroke();}}
+ }
+ if(step>=2&&BS){g.setLineDash([6,5]);g.strokeStyle="#ff9f6b";g.lineWidth=1.6;curve(BS,-1);g.stroke();curve(BS,1);g.stroke();g.setLineDash([]);txt("Bow shock",BS.X[12],cy-BS.H[12]-8,"#ffb48a");}
+ if(step>=3&&MP){g.strokeStyle="#7ad7ff";g.lineWidth=2;curve(MP,-1);g.stroke();curve(MP,1);g.stroke();txt("Magnetopause",cx+60,Math.max(16,cy-hw(MP,cx+60)-8),"#9fe3ff");txt("Magnetotail",cx+330,cy+5,"#9fe3ff","14px system-ui");if(rmp>60)txt("Compressed side",cx-rmp-6,cy+4,"#9fe3ff","12px system-ui","right");}
+ g.lineWidth=1.4;for(const q of SW){g.strokeStyle=q.leak?"rgba(255,140,220,.95)":"rgba(255,211,107,.8)";g.beginPath();g.moveTo(q.px,q.py);g.lineTo(q.x,q.y);g.stroke();}
+ g.beginPath();g.arc(cx,cy,R,0,TAU);g.fillStyle="#2a6fb8";g.fill();txt("Earth",cx,cy+4,"#fff","12px system-ui","center");
+ for(const p of ATM){if(p.gone)continue;g.fillStyle=p.out?"rgba(200,230,255,.95)":"rgba(160,210,255,.6)";g.fillRect(p.x-1,p.y-1,2.2,2.2);}
+ if(step>=4)for(let i=0;i<2;i++){const a=Math.min(1,aur[i]*.12+(step===5?.2:0));if(a<.04)continue;const c0=i?Math.PI/2:-Math.PI/2;g.save();g.shadowColor="rgba(125,255,176,"+a+")";g.shadowBlur=18;g.strokeStyle="rgba(125,255,176,"+a+")";g.lineWidth=6;g.beginPath();g.arc(cx,cy,R+4,c0-.5,c0+.5);g.stroke();g.strokeStyle="rgba(220,110,255,"+a*.6+")";g.lineWidth=3;g.beginPath();g.arc(cx,cy,R+11,c0-.35,c0+.35);g.stroke();g.restore();}
+ if(step===5){txt("Aurora Borealis (north)",cx-60,cy-R-26,"#9dffc4");txt("Aurora Australis (south)",cx-62,cy+R+34,"#9dffc4");}
+ txt("Solar wind →",16,40,"#ffd36b","600 14px system-ui");
+ const atm=Math.round(ATM.filter(p=>!p.out).length/150*100),size=rmp?Math.round(rmp/125*100):0;
+ $("note").textContent="Atmosphere left: "+atm+"%."+(step>=3&&rmp?" Magnetosphere size: "+size+"% of normal"+(size<85?" (squeezed by a strong wind).":size>115?" (relaxed by a weak wind).":"."):"")+(step===1?" Move to step 2 to switch the shield on.":"")+(step>=3&&!rmp?" With no magnetic field, nothing deflects the wind.":"");
+}
+function loop(ts){const k=Math.min(3,(ts-last)/16.7);last=ts;if(!paused){update(k);render();}requestAnimationFrame(loop);}
+ui();render();requestAnimationFrame(loop);
+</script>
+</body>
+</html>

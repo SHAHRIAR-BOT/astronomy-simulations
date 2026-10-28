@@ -1,0 +1,200 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cherenkov Radiation: Neutrino Hit in Ice</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef6fa;--panel:#ffffff;--ink:#12303f;--muted:#4f6b78;--line:#c5dbe5;
+  --ice:#d3ebf5;--ice2:#a9d3e4;--blue:#0a8fd6;--flash:#1aa7ff;--ghost:#6b4fd6;--sensor:#7aa3b6;--canvas:#f7fcfe;--atom:#7d9eae;
+  --water:#9fd0e6;--water2:#5fa6cc;--rod:#4b5b66;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1f2c;--panel:#122b3b;--ink:#e3f2f9;--muted:#93b3c3;--line:#244557;
+  --ice:#16394d;--ice2:#245674;--blue:#4cc9ff;--flash:#6fd8ff;--ghost:#b9a6ff;--sensor:#5f8ea6;--canvas:#0e2433;--atom:#5f8ea6;
+  --water:#0f3550;--water2:#07202f;--rod:#8aa0ac;}}
+:root[data-theme="dark"]{
+  --bg:#0c1f2c;--panel:#122b3b;--ink:#e3f2f9;--muted:#93b3c3;--line:#244557;
+  --ice:#16394d;--ice2:#245674;--blue:#4cc9ff;--flash:#6fd8ff;--ghost:#b9a6ff;--sensor:#5f8ea6;--canvas:#0e2433;--atom:#5f8ea6;
+  --water:#0f3550;--water2:#07202f;--rod:#8aa0ac;}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif}
+main{max-width:860px;margin:0 auto;padding:28px 16px 60px}
+h1{font:600 clamp(28px,5vw,40px)/1.15 "Source Serif 4",Georgia,serif;margin:0 0 8px}
+h2{font:600 24px/1.2 "Source Serif 4",Georgia,serif;margin:40px 0 6px}
+p.lead{color:var(--muted);margin:0 0 8px;max-width:62ch}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:14px}
+canvas{width:100%;height:auto;display:block;background:var(--canvas);border-radius:10px;border:1px solid var(--line)}
+.cap{min-height:52px;margin:12px 0 0;font:500 17px/1.4 "Source Serif 4",Georgia,serif}
+.row{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:end;margin-top:14px}
+label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted);min-width:200px;flex:1}
+label b{color:var(--ink);font-weight:500}
+input[type=range]{width:100%;accent-color:var(--blue)}
+button{font:500 14px Inter,system-ui,sans-serif;color:var(--ink);background:var(--ice);border:1px solid var(--ice2);border-radius:8px;padding:9px 14px;cursor:pointer}
+button:hover{background:var(--ice2)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.note{font-size:14px;color:var(--muted);margin:12px 0 0;max-width:70ch}
+
+  /* Mobile Touch Responsiveness Enhancement */
+  canvas { touch-action: pan-y; }
+  body { -webkit-overflow-scrolling: touch; }
+</style>
+</head>
+<body>
+<main>
+<h1>How a neutrino hit becomes blue light</h1>
+<p class="lead">When a neutrino hits an atom in the ice, it makes a charged particle that moves faster than light can travel through ice. The result is a cone of blue Cherenkov light.</p>
+
+<section>
+<canvas id="c1" width="800" height="420" role="img" aria-label="Animation of a neutrino hitting a nucleus in ice and a charged particle producing a cone of blue Cherenkov light that sensors detect"></canvas>
+<p class="cap" id="cap" aria-live="polite"></p>
+<div class="row">
+  <label>Particle speed: <b id="vTxt"></b>
+    <input id="vS" type="range" min="50" max="99" value="99" aria-label="Particle speed as percent of light speed in vacuum">
+  </label>
+  <label>Animation speed: <b id="aTxt"></b>
+    <input id="aS" type="range" min="25" max="200" value="100">
+  </label>
+</div>
+<div class="row">
+  <button id="replay" class="primary">Replay</button>
+  <button id="wv">Hide wavelets</button>
+</div>
+<p class="note">Light in ice travels at about 76% of its vacuum speed (refractive index about 1.31). Drag the particle speed below 76% and the cone disappears: the light waves just spread out ahead of the particle with no cone. Above 76% they pile up, like the sonic boom of a supersonic jet. The cone angle is about 41° for a particle moving near light speed.</p>
+</section>
+
+<h2>Same effect in a nuclear reactor pool</h2>
+<p class="lead">Fast electrons from the fuel rods move faster than light does in water, so the water glows blue.</p>
+<section>
+<canvas id="c2" width="800" height="260" role="img" aria-label="Fuel rods under water glowing with blue Cherenkov light"></canvas>
+</section>
+</main>
+
+<script>
+(function(){
+"use strict";
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+var c1=document.getElementById("c1"),g=c1.getContext("2d");
+var AX=200,AY=210,U=150,N_ICE=1.31,FICE=1/N_ICE; /* U = light speed in ice, px/s */
+var HIT_T=2.2,T_END=2.8;
+var atoms=[],sensors=[],t,T,wavelets,acc,hitDone,hold,showW=true,lastT=performance.now();
+var vS=document.getElementById("vS"),aS=document.getElementById("aS"),cap=document.getElementById("cap");
+for(var i=0;i<34;i++){var ax=30+Math.random()*740,ay=20+Math.random()*380;if(Math.abs(ay-AY)<26)ay+=(ay<AY?-30:30);atoms.push([ax,ay]);}
+for(var i=0;i<10;i++)for(var j=0;j<6;j++)sensors.push({x:60+i*75,y:50+j*64,lit:0});
+function vp(){return U*(vS.value/100)/FICE;}
+function fracTxt(){var f=vS.value/100,ok=f>FICE;
+  document.getElementById("vTxt").textContent=Math.round(f*100)+"% of c"+(ok?" (faster than light in ice)":" (slower, no cone)");
+  document.getElementById("aTxt").textContent=(aS.value/100).toFixed(2)+"×";}
+function restart(){t=0;T=0;wavelets=[];acc=0;hitDone=false;hold=0;sensors.forEach(function(s){s.lit=0;});fracTxt();}
+function caption(){
+  var f=vS.value/100,fast=f>FICE;
+  if(t<HIT_T-.2)return "1. A neutrino drifts through the ice. Almost every time it slips between atoms and nothing happens.";
+  if(T<.9)return "2. Very rarely it hits a nucleus and turns into a fast charged particle (a muon).";
+  if(T<1.9)return fast?"3. The particle outruns light in ice, so its light waves pile up into a blue cone.":"3. The particle is slower than light in ice, so its waves spread out with no cone and no flash.";
+  return fast?"4. Sensors record when the blue light arrives. Timing and brightness give the neutrino’s direction and energy.":"4. No cone means no Cherenkov flash. The sensors see nothing.";
+}
+function step(dt){
+  t+=dt;
+  if(t>=HIT_T){if(!hitDone){hitDone=true;}T=t-HIT_T;}
+  if(hitDone&&T<T_END){
+    acc+=dt;while(acc>=.06){acc-=.06;var tt=T-acc;wavelets.push({x:AX+vp()*tt,born:tt});}
+  }
+  if(hitDone&&T>=T_END){hold+=dt;if(hold>2.2)restart();}
+  var now=hitDone?Math.min(T,T_END+hold):0;
+  if(hitDone&&hold===0||hitDone&&hold>0){
+    sensors.forEach(function(s){
+      s.lit=Math.max(0,s.lit-dt*1.8);
+      for(var k=0;k<wavelets.length;k++){
+        var w=wavelets[k],age=(hold>0?T_END:T)-w.born,r=U*age,d=Math.hypot(s.x-w.x,s.y-AY);
+        if(Math.abs(d-r)<7&&r>0){s.lit=1;break;}
+      }
+    });
+  }else sensors.forEach(function(s){s.lit=Math.max(0,s.lit-dt*1.8);});
+}
+function draw(){
+  var fl=css("--flash"),gh=css("--ghost"),at=css("--atom"),sc=css("--sensor");
+  g.clearRect(0,0,800,420);g.fillStyle=css("--ice");g.fillRect(0,0,800,420);
+  atoms.forEach(function(a){
+    g.beginPath();g.arc(a[0],a[1],12,0,7);g.strokeStyle=at;g.globalAlpha=.3;g.lineWidth=1;g.stroke();
+    g.globalAlpha=.8;g.fillStyle=at;g.beginPath();g.arc(a[0],a[1],2.5,0,7);g.fill();g.globalAlpha=1;
+  });
+  g.beginPath();g.arc(AX,AY,16,0,7);g.strokeStyle=at;g.globalAlpha=.5;g.stroke();g.globalAlpha=1;
+  g.fillStyle=at;g.beginPath();g.arc(AX,AY,4.5,0,7);g.fill();
+  sensors.forEach(function(s){
+    g.beginPath();g.arc(s.x,s.y,3.5+s.lit*6,0,7);g.fillStyle=s.lit>.05?fl:sc;g.globalAlpha=s.lit>.05?.5+s.lit*.5:.7;g.fill();g.globalAlpha=1;
+  });
+  var Tn=hitDone?Math.min(T,T_END):0,f=vS.value/100,fast=f>FICE;
+  if(showW&&hitDone){
+    g.lineWidth=1.5;g.strokeStyle=fl;
+    wavelets.forEach(function(w){
+      var age=Tn-w.born,r=U*age;if(r<=0)return;
+      g.globalAlpha=Math.max(0,.55-age*.17);g.beginPath();g.arc(w.x,AY,r,0,7);g.stroke();
+    });g.globalAlpha=1;
+  }
+  if(hitDone){
+    var mx=AX+vp()*Tn;
+    if(fast){
+      var a=Math.asin(U/vp()),L=Tn*Math.sqrt(vp()*vp()-U*U);
+      var e1=[mx-Math.cos(a)*L,AY-Math.sin(a)*L],e2=[mx-Math.cos(a)*L,AY+Math.sin(a)*L];
+      g.beginPath();g.moveTo(mx,AY);g.lineTo(e1[0],e1[1]);g.lineTo(e2[0],e2[1]);g.closePath();
+      g.fillStyle=fl;g.globalAlpha=.22;g.fill();g.globalAlpha=1;
+      g.strokeStyle=fl;g.lineWidth=3;g.beginPath();g.moveTo(e1[0],e1[1]);g.lineTo(mx,AY);g.lineTo(e2[0],e2[1]);g.stroke();
+    }
+    g.strokeStyle=gh;g.lineWidth=2.5;g.beginPath();g.moveTo(AX,AY);g.lineTo(mx,AY);g.stroke();
+    g.fillStyle=gh;g.beginPath();g.arc(mx,AY,6,0,7);g.fill();
+    if(T<.5){var k=T/.5;g.globalAlpha=1-k;g.fillStyle=fl;g.beginPath();g.arc(AX,AY,10+k*40,0,7);g.fill();g.globalAlpha=1;}
+  }else{
+    var nx=-20+(t/HIT_T)*(AX+20);
+    g.strokeStyle=gh;g.lineWidth=2;g.globalAlpha=.6;g.beginPath();g.moveTo(nx-60,AY);g.lineTo(nx,AY);g.stroke();g.globalAlpha=1;
+    g.fillStyle=gh;g.beginPath();g.arc(nx,AY,6,0,7);g.fill();
+  }
+  g.fillStyle=css("--muted");g.font="14px Inter,system-ui,sans-serif";
+  g.fillText("neutrino / charged particle",12,404);
+  cap.textContent=caption();
+}
+
+/* reactor pool */
+var c2=document.getElementById("c2"),h=c2.getContext("2d"),elec=[],eAcc=0;
+function drawPool(dt){
+  var w=css("--water"),w2=css("--water2"),fl=css("--flash"),rod=css("--rod");
+  var gr=h.createLinearGradient(0,0,0,260);gr.addColorStop(0,w);gr.addColorStop(1,w2);
+  h.fillStyle=gr;h.fillRect(0,0,800,260);
+  var t0=performance.now()/1000;
+  for(var i=0;i<8;i++){
+    var x=70+i*95;
+    var rg=h.createRadialGradient(x,200,5,x,200,110);
+    rg.addColorStop(0,fl);rg.addColorStop(1,"rgba(26,167,255,0)");
+    h.globalAlpha=.35+.1*Math.sin(t0*3+i*1.7);h.fillStyle=rg;h.fillRect(x-110,90,220,170);h.globalAlpha=1;
+    h.fillStyle=rod;h.fillRect(x-9,150,18,110);
+  }
+  eAcc+=dt;
+  while(eAcc>.05){eAcc-=.05;var rx=70+Math.floor(Math.random()*8)*95;elec.push({x:rx+(Math.random()-.5)*10,y:150+Math.random()*80,a:-Math.PI/2+(Math.random()-.5)*2.2,t:0});}
+  elec.forEach(function(e){
+    e.t+=dt;var len=e.t*160,k=e.t/.5;
+    var ex=e.x+Math.cos(e.a)*len,ey=e.y+Math.sin(e.a)*len;
+    h.globalAlpha=Math.max(0,1-k);h.strokeStyle=fl;h.lineWidth=2;h.beginPath();h.moveTo(e.x,e.y);h.lineTo(ex,ey);h.stroke();
+    h.fillStyle=fl;h.beginPath();h.arc(ex,ey,3+4*(1-k),0,7);h.fill();h.globalAlpha=1;
+  });
+  elec=elec.filter(function(e){return e.t<.5;});
+  h.fillStyle=css("--ink");h.globalAlpha=.8;h.font="14px Inter,system-ui,sans-serif";h.fillText("water",12,22);h.fillText("fuel rods",12,250);h.globalAlpha=1;
+}
+
+function loop(now){
+  var dt=Math.min(.05,(now-lastT)/1000)*(aS.value/100);lastT=now;
+  step(dt);draw();drawPool(dt);
+  requestAnimationFrame(loop);
+}
+vS.oninput=function(){fracTxt();};
+aS.oninput=fracTxt;
+document.getElementById("replay").onclick=restart;
+document.getElementById("wv").onclick=function(){showW=!showW;this.textContent=showW?"Hide wavelets":"Show wavelets";};
+restart();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

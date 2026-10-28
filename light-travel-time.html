@@ -1,0 +1,184 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Light-Travel Time: The Cosmic Clock</title>
+<style>
+:root{--bg:#eceef3;--fg:#161a2b;--mut:#565d7a;--btn:#d6dae9;--on:#e8782a;--onfg:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#070a14;--fg:#e8eaf4;--mut:#9aa2c2;--btn:#1a2040;--on:#f08a2c;--onfg:#120a02}}
+:root[data-theme="dark"]{--bg:#070a14;--fg:#e8eaf4;--mut:#9aa2c2;--btn:#1a2040;--on:#f08a2c;--onfg:#120a02}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:880px;margin:0 auto;padding:20px 16px 32px}
+h1{font:600 clamp(1.5rem,4vw,2.1rem)/1.2 Georgia,"Times New Roman",serif;margin:0 0 12px}
+h2{font:600 1.2rem/1.3 Georgia,serif;margin:14px 0 4px}
+canvas{width:100%;height:auto;display:block;border-radius:10px;background:#0b1020}
+.tabs,.btns{display:flex;flex-wrap:wrap;gap:8px}
+.tabs{margin-bottom:12px}
+button{font:inherit;color:var(--fg);background:var(--btn);border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
+button[aria-pressed="true"]{background:var(--on);color:var(--onfg);font-weight:600}
+button:focus-visible,input:focus-visible{outline:3px solid var(--on);outline-offset:2px}
+.cap{margin:0 0 12px;max-width:68ch;color:var(--mut)}
+#ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 22px;align-items:end;margin-top:14px}
+#ctl .btns{grid-column:1/-1}
+label{display:block;font-size:.92rem;color:var(--mut)}
+label b{color:var(--fg);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--on)}
+#note{margin-top:12px;min-height:3.5em;max-width:70ch}
+
+  /* Mobile Touch Responsiveness Enhancement */
+  canvas { touch-action: pan-y; }
+  body { -webkit-overflow-scrolling: touch; }
+</style>
+</head>
+<body>
+<main>
+<h1>Light-travel time: the cosmic clock</h1>
+<div class="tabs" id="tabs"></div>
+<h2 id="st"></h2>
+<p class="cap" id="cap"></p>
+<canvas id="c" role="img" aria-label="Interactive simulation of the speed of light and light-travel time"></canvas>
+<div id="ctl"></div>
+<div id="note" aria-live="polite"></div>
+</main>
+<script>
+const cv=document.getElementById("c"),g=cv.getContext("2d"),W=800,H=480,TAU=6.2832,rnd=Math.random;
+const dpr=Math.min(2,devicePixelRatio||1);cv.width=W*dpr;cv.height=H*dpr;g.scale(dpr,dpr);
+const $=id=>document.getElementById(id);
+const C=299792.458,LY=9.4607e12,YR=3.15576e7,NOW=2026;
+const V={d:3,ts:1,sp:1,ls:0};
+let sc=0,paused=matchMedia("(prefers-reduced-motion: reduce)").matches,last=performance.now();
+function fmt(s){if(s<1e-3)return(s*1e6).toFixed(0)+" µs";if(s<1)return(s*1e3).toFixed(0)+" ms";if(s<60)return s.toFixed(1)+" seconds";if(s<3600)return Math.floor(s/60)+" min "+Math.round(s%60)+" s";if(s<86400)return(s/3600).toFixed(1)+" hours";if(s<YR)return Math.round(s/86400)+" days";const y=s/YR;if(y<100)return y.toFixed(2)+" years";if(y<1e6)return Math.round(y).toLocaleString()+" years";return(y/1e6).toFixed(2)+" million years";}
+function txt(s,x,y,c,f,a){g.fillStyle=c||"#fff";g.font=f||"13px system-ui,sans-serif";g.textAlign=a||"left";g.fillText(s,x,y);g.textAlign="left";}
+function glow(x,y,r,c){const gr=g.createRadialGradient(x,y,0,x,y,r*2.4);gr.addColorStop(0,c);gr.addColorStop(.4,c);gr.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=gr;g.beginPath();g.arc(x,y,r*2.4,0,TAU);g.fill();}
+
+/* 1: thunder */
+const S1={t:-1};
+const sc1={name:"1. Lightning and thunder",
+ text:"Light travels about 300,000 km/s, sound only about 343 m/s in room-temperature air. So the flash reaches you first and the thunder arrives later.",
+ ctl:[{id:"d",label:"Distance to the lightning (km)",min:.5,max:10,step:.1,val:3},{id:"ts",label:"Time speed (×)",min:1,max:5,step:.5,val:1},{btn:"⚡ Strike!",fn:()=>{S1.t=0;}}],
+ note(){const d=V.d,tl=d/C,tsnd=d*1000/343;return "Light needs about "+fmt(tl)+" to reach you. Sound needs "+d.toFixed(1)+" km ÷ 343 m/s = "+tsnd.toFixed(1)+" seconds. Light is about 874,000 times faster than sound."+(S1.t<0?" Press Strike!":"");},
+ step(dt){if(S1.t>=0&&S1.t<60)S1.t+=dt*V.ts;},
+ draw(){
+  const gy=380,ox=730,bx=ox-V.d/10*600,t=S1.t;
+  g.fillStyle="#1d3a24";g.fillRect(0,gy,W,H-gy);
+  g.fillStyle="#3a4568";g.beginPath();g.arc(bx-20,70,30,0,TAU);g.arc(bx+15,60,38,0,TAU);g.arc(bx+50,72,28,0,TAU);g.fill();
+  if(t>=0&&t<.7){g.strokeStyle="#fff";g.lineWidth=4;g.beginPath();g.moveTo(bx,90);let y=90,x=bx;while(y<gy){x+=(rnd()-.5)*28;y+=36;g.lineTo(x,Math.min(y,gy));}g.stroke();}
+  g.fillStyle="#e8d2a8";g.beginPath();g.arc(ox,gy-30,10,0,TAU);g.fill();g.fillRect(ox-8,gy-20,16,20);txt("You",ox,gy+22,"#fff","13px system-ui","center");
+  if(t>=0){const r=343*t/10000*600;g.setLineDash([6,5]);g.strokeStyle="rgba(120,200,255,.8)";g.lineWidth=2;g.beginPath();g.arc(bx,gy,r,Math.PI,TAU);g.stroke();g.setLineDash([]);
+   if(ox-bx<=r)txt("BOOM!",ox-40,gy-70,"#9ad0ff","700 22px system-ui","center");
+   if(t<.25){g.fillStyle="rgba(255,255,255,"+(.5*(1-t/.25))+")";g.fillRect(0,0,W,H);}
+   txt("Time since the flash: "+t.toFixed(1)+" s",16,30,"#fff","600 15px system-ui");
+   txt("Flash seen after "+fmt(V.d/C),16,52,"#ffe08a","14px system-ui");
+   txt("Thunder heard after "+(V.d*1000/343).toFixed(1)+" s",16,74,"#9ad0ff","14px system-ui");}
+  else txt("Sound travels as a ring through the air. Press Strike!",16,30);
+ }};
+
+/* 2: around Earth */
+const S2={a:0,t:0,k:1};
+const sc2={name:"2. Racing around the Earth",
+ text:"In a vacuum light moves at 299,792 km/s. That is fast enough to circle Earth’s equator about 7.5 times in one second, yet sunlight still needs time to reach us.",
+ ctl:[{btn:"Real speed",fn:()=>{S2.k=1;S2.a=S2.t=0;}},{btn:"10× slower",fn:()=>{S2.k=.1;S2.a=S2.t=0;}},{btn:"100× slower",fn:()=>{S2.k=.01;S2.a=S2.t=0;}}],
+ note:()=>"Equator ≈ 40,075 km ÷ 299,792 km/s ≈ 0.134 s per lap, or about 7.48 laps per second. At real speed the dot is a blur.",
+ step(dt){S2.t+=dt*S2.k;S2.a+=TAU*(C/40075)*dt*S2.k;},
+ draw(){
+  const cx=400,cy=250,R=110;g.beginPath();g.arc(cx,cy,R,0,TAU);g.fillStyle="#2a6fb8";g.fill();txt("Earth",cx,cy+4,"#fff","14px system-ui","center");
+  g.strokeStyle="rgba(255,255,255,.2)";g.lineWidth=1;g.beginPath();g.arc(cx,cy,R+34,0,TAU);g.stroke();
+  const n=S2.k===1?60:40;for(let i=0;i<n;i++){const a=S2.a-i*(S2.k===1?.08:.012);g.fillStyle="rgba(255,224,120,"+(1-i/n)*.8+")";g.beginPath();g.arc(cx+(R+34)*Math.cos(a),cy-(R+34)*Math.sin(a),i?3:6,0,TAU);g.fill();}
+  txt("Laps completed: "+Math.floor(S2.a/TAU),16,34,"#fff","600 16px system-ui");
+  txt("Real time passed: "+(S2.t).toFixed(2)+" s",16,58,"#ffe08a","14px system-ui");
+  txt("Screen speed: "+(S2.k===1?"real":S2.k===.1?"10× slower":"100× slower"),16,82,"#9aa2c2","13px system-ui");
+ }};
+
+/* 3: journey */
+const PL=[["Mercury",57.9e6,"#b5aaa0",6],["Venus",108.2e6,"#e6c27a",9],["Earth",149597870,"#2a6fb8",9],["Mars",227.9e6,"#d1603d",7],["Jupiter",778.6e6,"#d8b48a",16],["Saturn",1433.5e6,"#e6d49a",14],["Uranus",2872.5e6,"#8fe0e6",11],["Neptune",4495.1e6,"#4a7bff",11],["Pluto",5.9e9,"#c9a37a",5]];
+const PLN=PL.filter(p=>!["Earth","Pluto"].includes(p[0])).map(p=>({n:p[0],km:p[1],col:"#ffd24a",r:24,dst:p[0],dc:p[2],from:"The Sun",dr:Math.max(14,p[3]*1.6),msg:"Sunlight takes about "+fmt(p[1]/C)+" to reach "+p[0]+"."}));
+const OB=[
+{n:"The Moon",km:384400,col:"#c8ccd6",r:14,dst:"Earth",dc:"#2a6fb8",msg:"Closest cosmic object. A call with an astronaut would have a 2.6-second round-trip echo."},
+{n:"The Sun",km:149597870,col:"#ffd24a",r:24,dst:"Earth",dc:"#2a6fb8",msg:"If it vanished, Earth would stay warm and lit for over eight minutes."},
+...PLN,{n:"Pluto",km:5.9e9,col:"#ffd24a",r:24,dst:"Pluto",dc:"#c9a37a",from:"The Sun",msg:"Sunlight needs about 5.5 hours to reach Pluto. Signals to probes like New Horizons take over five hours too."},
+{n:"Proxima Centauri",km:4.24*LY,col:"#ff6a4a",r:14,dst:"Earth",dc:"#2a6fb8",msg:"If it exploded, we would have over four years to prepare before the news arrived."},
+{n:"Andromeda Galaxy",km:2.5e6*LY,col:"#b79bff",r:30,dst:"Earth",dc:"#2a6fb8",gal:1,msg:"Its light began the journey before the earliest ancestors of modern humans walked the Earth."}];
+const S3={i:1,t:0,tv:null,ph:[],ne:0};
+function T3(){return OB[S3.i].km/C;}
+function Ts(){return 8/V.sp;}
+function pick(i){S3.i=i;S3.t=0;S3.tv=null;S3.ph=[];S3.ne=0;const bs=$("ctl").querySelectorAll("button[data-o]");bs.forEach(b=>b.setAttribute("aria-pressed",+b.dataset.o===i));}
+const sc3={name:"3. The light journey",
+ text:"Pick an object. Photons leave on a trip toward Earth, with screen time sped up so you can watch. Then make the object vanish and see how long the sky still shows it.",
+ ctl:[...OB.map((o,i)=>({btn:o.n,fn:()=>pick(i),o:i})),{id:"sp",label:"Animation speed",min:.5,max:3,step:.1,val:1},{btn:"💥 Make it vanish!",fn:()=>{if(S3.tv===null)S3.tv=S3.t;}},{btn:"Reset",fn:()=>pick(S3.i)}],
+ note(){const o=OB[S3.i],T=T3();return o.msg+" Real light-travel time: "+fmt(T)+".";},
+ step(dt){S3.t+=dt;const Tm=Ts();if(S3.tv===null){while(S3.ne<=S3.t){S3.ph.push({e:S3.ne,y:(rnd()-.5)*8});S3.ne+=.3;}}S3.ph=S3.ph.filter(p=>S3.t-p.e<=Tm);},
+ draw(){
+  const o=OB[S3.i],ox=90,ex=710,cy=240,Tm=Ts(),k=T3()/Tm,alive=S3.tv===null;
+  const sees=alive||S3.t<S3.tv+Tm;
+  g.strokeStyle="rgba(255,255,255,.12)";g.setLineDash([4,6]);g.beginPath();g.moveTo(ox,cy);g.lineTo(ex,cy);g.stroke();g.setLineDash([]);
+  const sc2c=o.from?"#ffd24a":o.col,sr=o.from?24:o.r;
+  if(alive){glow(ox,cy,sr,sc2c+"88");g.fillStyle=sc2c;if(o.gal){g.save();g.translate(ox,cy);g.rotate(-.4);g.scale(1,.35);g.beginPath();g.arc(0,0,sr,0,TAU);g.fill();g.restore();}else{g.beginPath();g.arc(ox,cy,sr,0,TAU);g.fill();}}
+  else{g.setLineDash([4,4]);g.strokeStyle="rgba(255,255,255,.5)";g.beginPath();g.arc(ox,cy,sr,0,TAU);g.stroke();g.setLineDash([]);}
+  txt(o.from||o.n,ox,cy+sr+26,"#fff","14px system-ui","center");
+  const dr=o.dr||26;g.fillStyle=o.dc;g.beginPath();g.arc(ex,cy,dr,0,TAU);g.fill();txt(o.dst,ex,cy+dr+26,"#fff","14px system-ui","center");
+  for(const p of S3.ph){const f=(S3.t-p.e)/Tm;g.fillStyle="rgba(255,236,150,.95)";g.beginPath();g.arc(ox+(ex-ox)*f,cy+p.y,3.5,0,TAU);g.fill();}
+  const real=S3.t*k;
+  txt("Real time passed: "+fmt(real),16,30,"#fff","600 15px system-ui");
+  txt("One-way light trip: "+fmt(T3()),16,52,"#ffe08a","14px system-ui");
+  if(S3.tv!==null){txt("Vanished at the "+fmt(S3.tv*k)+" mark",16,74,"#ff9a8a","14px system-ui");
+   const left=Math.max(0,S3.tv+Tm-S3.t)*k;txt(left>0?(o.dst+" still sees it for "+fmt(left)+" more"):(o.dst+" now learns the news: it is gone."),16,96,left>0?"#9dffc4":"#ff9a8a","600 14px system-ui");}
+  txt(sees?"◉ "+o.dst+" sees: still shining":"○ "+o.dst+" sees: darkness",ex-170,cy-60,sees?"#9dffc4":"#ff9a8a","600 14px system-ui");
+ }};
+
+/* 4: light-years */
+const RK=[["The Moon",384400],["The Sun",149597870],["Pluto",5.9e9],["Proxima Centauri",4.24*LY],["Andromeda",2.5e6*LY]];
+const lg=Math.log10;
+const sc4={name:"4. How old is the light?",
+ text:"A light-year is a distance, not a time: how far light travels in one year. The farther an object is, the further back in time you see it.",
+ ctl:[{id:"ls",label:"Distance (log scale)",min:-8,max:6.5,step:.02,val:0,fmtv:v=>(Math.pow(10,v)).toPrecision(3)+" light-years"},...RK.map(([n,km])=>({btn:n,fn:()=>setLs(lg(km/LY))})),{btn:"A star 100 light-years away",fn:()=>setLs(2)}],
+ note(){const ly=Math.pow(10,V.ls),sec=ly*YR,km=ly*LY;let w="";for(const[n,k2]of RK)if(Math.abs(lg(k2/LY)-V.ls)<.12)w=" This is close to "+n+".";return "Distance ≈ "+(km<1e9?Math.round(km).toLocaleString():km.toExponential(2))+" km. The light you see left "+fmt(sec)+" ago"+(ly>=1&&ly<=10000?", in the year "+Math.round(NOW-ly):"")+"."+w;},
+ draw(){
+  const x0=60,x1=740,ay=300,X=s=>x0+Math.max(0,Math.min(14,s))/14*(x1-x0);
+  g.strokeStyle="#fff";g.lineWidth=2;g.beginPath();g.moveTo(x0,ay);g.lineTo(x1,ay);g.stroke();
+  for(const[l,s]of [["seconds",0],["minutes",lg(60)],["hours",lg(3600)],["days",lg(86400)],["years",lg(YR)],["million years",lg(YR*1e6)]]){g.strokeStyle="rgba(255,255,255,.35)";g.lineWidth=1;g.beginPath();g.moveTo(X(s),ay-8);g.lineTo(X(s),ay+8);g.stroke();txt(l,X(s),ay+26,"#9aa2c2","12px system-ui","center");}
+  RK.forEach(([n,km],i)=>{const x=X(lg(km/C));g.fillStyle="#ffd24a";g.beginPath();g.arc(x,ay,5,0,TAU);g.fill();txt(n,x,ay-18-(i%2)*26,"#ffe08a","13px system-ui","center");});
+  const ly=Math.pow(10,V.ls),px=X(lg(ly*YR));g.fillStyle="#7dffb0";g.beginPath();g.moveTo(px,ay+8);g.lineTo(px-9,ay+36);g.lineTo(px+9,ay+36);g.fill();
+  txt("Age of the light (log scale)",x0,60,"#fff","600 15px system-ui");
+  txt("You are looking at the past: "+fmt(ly*YR)+" ago",x0,100,"#7dffb0","600 17px system-ui");
+ }};
+function setLs(v){V.ls=v;go(sc);}
+
+/* 5: planets */
+const S5={t:0},AN=[.5,1.6,2.5,3.5,4.4,5.3,.2,2.1,3.9];
+const sc5={name:"5. Sunlight reaches the planets",
+ text:"Sunlight spreads outward from the Sun at 299,792 km/s. Watch the light front reach each planet. Rings use a square-root distance scale so the inner planets are not squashed together.",
+ ctl:[{id:"sp",label:"Animation speed",min:.5,max:3,step:.1,val:1},{btn:"Replay",fn:()=>{S5.t=0;}}],
+ note:()=>"Each ring is the planet’s average distance from the Sun. Sunlight reaches Earth in about 8 min 19 s and Neptune in about 4.2 hours. Orbits are not to scale in speed, only in distance.",
+ step(dt){S5.t=Math.min(S5.t+dt*V.sp,12.4);},
+ draw(){
+  const cx=330,cy=250,R=215,TM=19700,tr=S5.t*20000/12,rr=km=>R*Math.sqrt(km/C/TM);
+  PL.forEach(([n,km])=>{g.strokeStyle="rgba(255,255,255,.14)";g.lineWidth=1;g.beginPath();g.arc(cx,cy,rr(km),0,TAU);g.stroke();});
+  if(tr>0&&tr<TM*1.06){const wr=R*Math.sqrt(tr/TM);g.fillStyle="rgba(255,210,80,.07)";g.beginPath();g.arc(cx,cy,wr,0,TAU);g.fill();g.strokeStyle="rgba(255,226,120,.9)";g.lineWidth=3;g.beginPath();g.arc(cx,cy,wr,0,TAU);g.stroke();}
+  glow(cx,cy,12,"#ffd24a88");g.fillStyle="#ffd24a";g.beginPath();g.arc(cx,cy,10,0,TAU);g.fill();txt("Sun",cx,cy+26,"#ffe08a","12px system-ui","center");
+  txt("Real time: "+fmt(tr),570,30,"#fff","600 15px system-ui");
+  PL.forEach(([n,km,col,r],i)=>{const a=AN[i],x=cx+rr(km)*Math.cos(a),y=cy+rr(km)*Math.sin(a),lit=tr>=km/C,d2=(tr-km/C)/900;
+   g.globalAlpha=lit?1:.4;g.fillStyle=col;g.beginPath();g.arc(x,y,r*.7+3,0,TAU);g.fill();g.globalAlpha=1;
+   if(lit&&d2<1){g.strokeStyle="rgba(255,236,150,"+(1-d2)+")";g.lineWidth=2;g.beginPath();g.arc(x,y,r+4+d2*18,0,TAU);g.stroke();}
+   txt(n,x+r*.7+6,y-6,lit?"#fff":"#7d84a3","12px system-ui");
+   const ly=70+i*26;txt(n,570,ly,lit?col:"#7d84a3","600 14px system-ui");txt(lit?fmt(km/C):"…",780,ly,lit?"#ffe08a":"#7d84a3","14px system-ui","right");});
+ }};
+
+/* shell */
+const scenes=[sc1,sc2,sc3,sc4,sc5],tabs=$("tabs");
+["Lightning","Around Earth","Journey","Light-years","Planets"].forEach((n,i)=>{const b=document.createElement("button");b.textContent=(i+1)+". "+n;b.onclick=()=>go(i);tabs.appendChild(b);});
+const pb=document.createElement("button");pb.textContent=paused?"Resume":"Pause";pb.setAttribute("aria-pressed",paused);pb.onclick=()=>{paused=!paused;pb.setAttribute("aria-pressed",paused);pb.textContent=paused?"Resume":"Pause";};tabs.appendChild(pb);
+function go(i){
+ sc=i;const s=scenes[i];[...tabs.children].forEach((b,j)=>{if(j<5)b.setAttribute("aria-pressed",j===i);});
+ $("st").textContent=s.name;$("cap").textContent=s.text;const ctl=$("ctl");ctl.innerHTML="";let row=null;
+ s.ctl.forEach(c=>{if(c.btn){if(!row){row=document.createElement("div");row.className="btns";ctl.appendChild(row);}const b=document.createElement("button");b.textContent=c.btn;if(c.o!==undefined){b.dataset.o=c.o;b.setAttribute("aria-pressed",c.o===S3.i);}b.onclick=()=>{c.fn();if(paused)render();};row.appendChild(b);}
+  else{const l=document.createElement("label"),o=document.createElement("b"),r=document.createElement("input"),f=c.fmtv||(v=>v);r.type="range";r.min=c.min;r.max=c.max;r.step=c.step;r.value=V[c.id];o.textContent=" "+f(+r.value);l.append(c.label+":",o,r);r.oninput=()=>{V[c.id]=+r.value;o.textContent=" "+f(+r.value);if(paused)render();};ctl.insertBefore(l,row);}});
+ render();
+}
+function render(){g.clearRect(0,0,W,H);const s=scenes[sc];s.draw();$("note").textContent=s.note();}
+function loop(ts){const dt=Math.min(.05,(ts-last)/1000);last=ts;if(!paused){const s=scenes[sc];if(s.step)s.step(dt);render();}requestAnimationFrame(loop);}
+go(0);requestAnimationFrame(loop);
+</script>
+</body>
+</html>

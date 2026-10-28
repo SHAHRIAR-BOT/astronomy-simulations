@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Alpha Centauri: The Three-Star System</title>
+<style>
+:root{--bg:#0a0f1c;--panel:#121a2d;--ink:#e8edf7;--mute:#8d9bb5;--line:#26334f;--a:#ffd45e;--b:#ff9a3c;--p:#ff5a4e;--ac:#4aa3ff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f3f5fa;--panel:#fff;--ink:#16203a;--mute:#5b6882;--line:#d5dbe8;--a:#c99700;--b:#d96a00;--p:#d12f24;--ac:#1c63c9}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS",Verdana,sans-serif;line-height:1.5}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.5rem;margin:0 0 4px}h2{font-size:1.05rem;margin:0 0 6px}p.sub{margin:0 0 16px;color:var(--mute)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+canvas{width:100%;height:auto;display:block}
+.read{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:8px}
+.read div{border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.read b{display:block;font-size:1.1rem;color:var(--ac)}.read span{color:var(--mute);font-size:.8rem}
+.ctl{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:14px 0}
+.ctl label{display:flex;flex-direction:column;font-size:.9rem;color:var(--mute);min-width:200px}
+button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:10px 18px;font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--a);outline-offset:2px}
+.note{color:var(--mute);font-size:.85rem;margin-top:14px}
+
+  /* Mobile Touch Responsiveness Enhancement */
+  canvas { touch-action: pan-y; }
+  body { -webkit-overflow-scrolling: touch; }
+</style></head><body><main>
+<h1>Alpha Centauri: The Three-Star System</h1>
+<p class="sub">Two stars circle each other every 79.76 years. Proxima Centauri circles the pair over about 550,000 years.</p>
+<div class="ctl">
+<button id="pp">Pause</button>
+<label>Simulation speed: <span id="tv">1×</span><input id="t" type="range" min="0.2" max="4" step="0.1" value="1"></label>
+</div>
+<div class="grid">
+<div class="box"><h2>Alpha Centauri A and B (around their barycenter)</h2>
+<canvas id="c1" width="460" height="400" aria-label="Alpha Centauri A and B orbiting a common center of mass"></canvas>
+<div class="read"><div><b id="s1">–</b><span>A–B separation</span></div><div><b id="v1">–</b><span>Relative speed</span></div><div><b id="y1">–</b><span>Time into orbit</span></div></div></div>
+<div class="box"><h2>Proxima Centauri (around the A–B pair)</h2>
+<canvas id="c2" width="460" height="400" aria-label="Proxima Centauri on a very wide orbit around the A and B pair"></canvas>
+<div class="read"><div><b id="s2">–</b><span>Distance from A–B</span></div><div><b id="v2">–</b><span>Orbital speed</span></div><div><b id="y2">–</b><span>Time into orbit</span></div></div></div>
+</div>
+<p class="note">Data: A–B period 79.76 years, eccentricity 0.519, semi-major axis 23.3 AU (closest 11.2 AU, farthest 35.6 AU). Proxima period about 550,000 years, eccentricity about 0.50, closest 4,300 AU, farthest 13,000 AU. Assumed here: masses of 1.1 and 0.9 solar masses, A–B pair seen face-on (the real orbit is tilted 79.2° to our view), and the Proxima orbit drawn flat. Sizes of the stars are not to scale, and the two panels run on different clocks. Speeds come from the vis-viva equation.</p>
+</main>
+<script>
+var $=function(i){return document.getElementById(i)};
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function kep(M,e){var E=M;for(var i=0;i<40;i++)E=E-(E-e*Math.sin(E)-M)/(1-e*Math.cos(E));return E}
+var spd=1,run=true,last=null,M1=0,M2=Math.PI,T1=[],T2=[],TAU=6.2832;
+$("t").oninput=function(){spd=+this.value;$("tv").textContent=spd.toFixed(1)+"×"};
+$("pp").onclick=function(){run=!run;this.textContent=run?"Pause":"Play"};
+var MA=1.1,MB=0.9,MT=2.0,KMS=29.78;
+function fmt(n){return Math.round(n).toLocaleString("en-US")}
+function dot(g,x,y,r,c){g.fillStyle=c;g.beginPath();g.arc(x,y,r,0,TAU);g.fill()}
+function trail(g,T,c){for(var i=1;i<T.length;i++){g.strokeStyle=c;g.globalAlpha=i/T.length*0.7;g.lineWidth=2.5;g.beginPath();g.moveTo(T[i-1][0],T[i-1][1]);g.lineTo(T[i][0],T[i][1]);g.stroke()}g.globalAlpha=1}
+function frame(ts){
+ if(last===null)last=ts;var dt=Math.min((ts-last)/1000,0.1);last=ts;
+ if(run){M1=(M1+dt*spd*TAU/14)%TAU;M2=(M2+dt*spd*TAU/50)%TAU}
+ /* panel 1: A and B */
+ var g=$("c1").getContext("2d"),W=460,H=400,a=23.3,e=0.519,b=a*Math.sqrt(1-e*e);
+ var E=kep(M1,e),x=a*(Math.cos(E)-e),y=b*Math.sin(E),r=a*(1-e*Math.cos(E)),s=170/20;
+ g.clearRect(0,0,W,H);
+ g.strokeStyle=css("--line");g.lineWidth=1;g.beginPath();
+ for(var i=0;i<=120;i++){var q=i/120*TAU,ex=a*(Math.cos(q)-e),ey=b*Math.sin(q);
+  var px=W/2+ex*s*MB/MT,py=H/2-ey*s*MB/MT;i?g.lineTo(px,py):g.moveTo(px,py)}g.stroke();
+ g.beginPath();for(i=0;i<=120;i++){q=i/120*TAU;ex=a*(Math.cos(q)-e);ey=b*Math.sin(q);
+  px=W/2-ex*s*MA/MT;py=H/2+ey*s*MA/MT;i?g.lineTo(px,py):g.moveTo(px,py)}g.stroke();
+ var ax=W/2-x*s*MB/MT,ay=H/2+y*s*MB/MT,bx=W/2+x*s*MA/MT,by=H/2-y*s*MA/MT;
+ T1.push([ax,ay,bx,by]);if(T1.length>70)T1.shift();
+ trail(g,T1.map(function(t){return[t[0],t[1]]}),css("--a"));trail(g,T1.map(function(t){return[t[2],t[3]]}),css("--b"));
+ g.strokeStyle=css("--mute");g.setLineDash([4,4]);g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.stroke();g.setLineDash([]);
+ dot(g,W/2,H/2,3,css("--mute"));dot(g,ax,ay,10,css("--a"));dot(g,bx,by,8,css("--b"));
+ g.fillStyle=css("--ink");g.font="13px Trebuchet MS,Verdana,sans-serif";g.fillText("A",ax+13,ay+4);g.fillText("B",bx+11,by+4);
+ $("s1").textContent=r.toFixed(1)+" AU";
+ $("v1").textContent=(KMS*Math.sqrt(MT*(2/r-1/a))).toFixed(1)+" km/s";
+ $("y1").textContent=(M1/TAU*79.76).toFixed(1)+" yr";
+ /* panel 2: Proxima */
+ g=$("c2").getContext("2d");a=8650;e=0.5;b=a*Math.sqrt(1-e*e);
+ E=kep(M2,e);x=a*(Math.cos(E)-e);y=b*Math.sin(E);r=a*(1-e*Math.cos(E));
+ s=(W-60)/17325;var fx=W/2+4337*s,fy=H/2;
+ g.clearRect(0,0,W,H);g.strokeStyle=css("--line");g.lineWidth=1;g.beginPath();g.ellipse(fx-a*e*s,fy,a*s,b*s,0,0,TAU);g.stroke();
+ var sx=fx+x*s,sy=fy-y*s;T2.push([sx,sy]);if(T2.length>70)T2.shift();trail(g,T2,css("--p"));
+ g.strokeStyle=css("--mute");g.setLineDash([4,4]);g.beginPath();g.moveTo(fx,fy);g.lineTo(sx,sy);g.stroke();g.setLineDash([]);
+ dot(g,fx,fy,7,css("--a"));dot(g,fx+3,fy+2,4,css("--b"));dot(g,sx,sy,6,css("--p"));
+ g.fillStyle=css("--ink");g.font="13px Trebuchet MS,Verdana,sans-serif";g.fillText("A + B",fx+10,fy-10);g.fillText("Proxima",sx+10,sy-8);
+ $("s2").textContent=fmt(r)+" AU";
+ $("v2").textContent=(KMS*Math.sqrt(MT*(2/r-1/a))).toFixed(2)+" km/s";
+ $("y2").textContent=fmt(M2/TAU*550)+" thousand yr";
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+</script></body></html>

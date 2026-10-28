@@ -1,0 +1,164 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Signal Latency and Mars Rovers: Simulation Lab</title>
+<style>
+:root{--bg:#eceef3;--fg:#161a2b;--mut:#565d7a;--btn:#d6dae9;--on:#e8782a;--onfg:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#070a14;--fg:#e8eaf4;--mut:#9aa2c2;--btn:#1a2040;--on:#f08a2c;--onfg:#120a02}}
+:root[data-theme="dark"]{--bg:#070a14;--fg:#e8eaf4;--mut:#9aa2c2;--btn:#1a2040;--on:#f08a2c;--onfg:#120a02}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:880px;margin:0 auto;padding:20px 16px 32px}
+h1{font:600 clamp(1.5rem,4vw,2.1rem)/1.2 Georgia,"Times New Roman",serif;margin:0 0 12px}
+h2{font:600 1.2rem/1.3 Georgia,serif;margin:14px 0 4px}
+canvas{width:100%;height:auto;display:block;border-radius:10px;background:#0b1020}
+.tabs,.btns{display:flex;flex-wrap:wrap;gap:8px}
+.tabs{margin-bottom:12px}
+button{font:inherit;color:var(--fg);background:var(--btn);border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
+button[aria-pressed="true"]{background:var(--on);color:var(--onfg);font-weight:600}
+button:focus-visible,input:focus-visible{outline:3px solid var(--on);outline-offset:2px}
+.cap{margin:0 0 12px;max-width:68ch;color:var(--mut)}
+#ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 22px;align-items:end;margin-top:14px}
+#ctl .btns{grid-column:1/-1}
+label{display:block;font-size:.92rem;color:var(--mut)}
+label b{color:var(--fg);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--on)}
+#note{margin-top:12px;min-height:3.5em;max-width:70ch}
+
+  /* Mobile Touch Responsiveness Enhancement */
+  canvas { touch-action: pan-y; }
+  body { -webkit-overflow-scrolling: touch; }
+</style>
+</head>
+<body>
+<main>
+<h1>Signal latency and Mars rovers</h1>
+<div class="tabs" id="tabs"></div>
+<h2 id="st"></h2>
+<p class="cap" id="cap"></p>
+<canvas id="c" role="img" aria-label="Simulation of radio signal delay between Earth and a Mars rover"></canvas>
+<div id="ctl"></div>
+<div id="note" aria-live="polite"></div>
+</main>
+<script>
+const cv=document.getElementById("c"),g=cv.getContext("2d"),W=800,H=480,TAU=6.2832,D2R=Math.PI/180;
+const dpr=Math.min(2,devicePixelRatio||1);cv.width=W*dpr;cv.height=H*dpr;g.scale(dpr,dpr);
+const $=id=>document.getElementById(id);
+const C=299792.458,AU=149597870.7,V={rate:15,T:12.5,ts:120};
+let sc=0,paused=matchMedia("(prefers-reduced-motion: reduce)").matches,last=performance.now();
+function fm(s){s=Math.max(0,s);if(s<60)return s.toFixed(0)+" s";if(s<3600)return Math.floor(s/60)+" min "+Math.round(s%60)+" s";return(s/3600).toFixed(1)+" h";}
+function txt(s,x,y,c,f,a){g.fillStyle=c||"#fff";g.font=f||"13px system-ui,sans-serif";g.textAlign=a||"left";g.fillText(s,x,y);g.textAlign="left";}
+/* orbits (approximate J2000 elements; Earth circular, Mars elliptical) */
+const E0=Date.UTC(2000,0,1,12),TODAY=(Date.UTC(2026,9,24)-E0)/864e5,MW=336.04*D2R,ME=.0934,MA=1.5237;
+function mars(t){const M=(355.45+.52403*t)*D2R-MW;let E=M;for(let i=0;i<6;i++)E=M+ME*Math.sin(E);const nu=2*Math.atan2(Math.sqrt(1+ME)*Math.sin(E/2),Math.sqrt(1-ME)*Math.cos(E/2)),r=MA*(1-ME*Math.cos(E));return[r*Math.cos(nu+MW),r*Math.sin(nu+MW)];}
+function earth(t){const L=(100.46+.98565*t)*D2R;return[Math.cos(L),Math.sin(L)];}
+function dist(t){const m=mars(t),e=earth(t);return Math.hypot(m[0]-e[0],m[1]-e[1]);}
+let tMin=0,tMax=0,dMn=9,dMx=0;for(let t=TODAY-2000;t<TODAY+6200;t+=2){const d=dist(t);if(d<dMn){dMn=d;tMin=t;}if(d>dMx){dMx=d;tMax=t;}}
+const dly=t=>dist(t)*AU/C;
+let tD=TODAY;
+
+/* scene 1 */
+const s1={name:"1. Earth–Mars distance changes the delay",
+ text:"Both planets orbit the Sun at different speeds, so the Earth–Mars distance changes continuously. Radio waves travel at the speed of light (about 299,792 km/s), so the delay changes with it.",
+ ctl:[{id:"rate",label:"Time speed (days per second)",min:1,max:120,step:1,val:15},{btn:"Today",fn:()=>{tD=TODAY;}},{btn:"Closest approach",fn:()=>{tD=tMin;}},{btn:"Farthest apart",fn:()=>{tD=tMax;}}],
+ note(){const d=dist(tD),s=d*AU/C;return "Light needs "+fm(s)+" to cross "+(d*AU/1e6).toFixed(1)+" million km, so a round trip takes "+fm(2*s)+". Over the cycle the one-way delay swings from about 3 to 22 minutes. Positions use approximate orbital elements.";},
+ step(dt){tD+=V.rate*dt;},
+ draw(){
+  const cx=270,cy=250,S=88;
+  g.strokeStyle="rgba(255,255,255,.18)";g.lineWidth=1;g.beginPath();g.arc(cx,cy,S,0,TAU);g.stroke();
+  g.beginPath();for(let a=0;a<=TAU+.05;a+=.05){const r=MA*(1-ME*ME)/(1+ME*Math.cos(a)),x=cx+S*r*Math.cos(a+MW),y=cy-S*r*Math.sin(a+MW);a?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();
+  const gr=g.createRadialGradient(cx,cy,0,cx,cy,30);gr.addColorStop(0,"#ffd24a");gr.addColorStop(1,"rgba(255,210,74,0)");g.fillStyle=gr;g.beginPath();g.arc(cx,cy,30,0,TAU);g.fill();
+  const e=earth(tD),m=mars(tD),ex=cx+S*e[0],ey=cy-S*e[1],mx=cx+S*m[0],my=cy-S*m[1],d=dist(tD),s=d*AU/C,hue=130-130*Math.min(1,Math.max(0,(s-180)/1140));
+  g.strokeStyle="hsl("+hue+",90%,60%)";g.lineWidth=2;g.setLineDash([5,5]);g.beginPath();g.moveTo(ex,ey);g.lineTo(mx,my);g.stroke();g.setLineDash([]);
+  const f=(performance.now()/2500)%1;g.fillStyle="#fff";g.beginPath();g.arc(ex+(mx-ex)*f,ey+(my-ey)*f,4,0,TAU);g.fill();
+  g.fillStyle="#2a6fb8";g.beginPath();g.arc(ex,ey,7,0,TAU);g.fill();g.fillStyle="#d1603d";g.beginPath();g.arc(mx,my,6,0,TAU);g.fill();
+  txt("Earth",ex+10,ey-8,"#9ad0ff");txt("Mars",mx+10,my-8,"#ffb08a");txt("Sun",cx,cy+22,"#ffe08a","12px system-ui","center");
+  txt(new Date(E0+tD*864e5).toISOString().slice(0,10),575,34,"#fff","600 16px system-ui");
+  txt("Distance: "+(d*AU/1e6).toFixed(1)+" million km",575,64,"#fff","14px system-ui");
+  txt("One-way delay: "+fm(s),575,90,"hsl("+hue+",90%,65%)","600 15px system-ui");
+  txt("Round-trip: "+fm(2*s),575,114,"#fff","14px system-ui");
+  const x0=575,x1=785,y0=250,y1=410;g.strokeStyle="rgba(255,255,255,.35)";g.strokeRect(x0,y0,x1-x0,y1-y0);
+  txt("One-way delay over time",x0,y0-8,"#9aa2c2","12px system-ui");
+  const Y=m2=>y1-m2/25*(y1-y0);for(const l of [3,22]){g.setLineDash([3,4]);g.strokeStyle="rgba(255,255,255,.3)";g.beginPath();g.moveTo(x0,Y(l));g.lineTo(x1,Y(l));g.stroke();g.setLineDash([]);txt(l+" min",x1-4,Y(l)-3,"#9aa2c2","11px system-ui","right");}
+  g.strokeStyle="#7dffb0";g.lineWidth=2;g.beginPath();for(let i=0;i<=130;i++){const t=tD-390+i*6,x=x0+i/130*(x1-x0),y=Y(dly(t)/60);i?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();
+  g.strokeStyle="#fff";g.lineWidth=1.5;g.beginPath();g.moveTo((x0+x1)/2,y0);g.lineTo((x0+x1)/2,y1);g.stroke();
+ }};
+
+/* scene 2 */
+const B={t:0},DR=12,REV=10;
+const STP=[["Scientists send instructions","A command travels toward Mars as a radio signal."],["The rover receives the command","It arrives after the one-way travel time."],["The rover explores","Cameras, sensors and onboard computers examine the surroundings."],["The rover makes local decisions","Its software avoids obstacles or stops at hazards."],["The rover sends results","Images and status data travel back to Earth."],["Scientists review the data","The team analyzes it and plans the next commands."]];
+function stepAt(tr,T){if(tr<T)return 0;if(tr<T+1)return 1;if(tr<T+DR*.4)return 2;if(tr<T+DR*.62)return 3;if(tr<T+DR)return 2;if(tr<2*T+DR)return 4;return 5;}
+const s2={name:"2. Commanding a rover across the delay",
+ text:"Scientists cannot steer the rover live, so they send a batch of commands and the rover carries them out on its own. Watch one full command cycle (screen time is sped up).",
+ ctl:[{id:"T",label:"One-way delay (minutes)",min:3,max:22,step:.5,val:12.5},{btn:"Use today’s delay",fn:()=>{V.T=Math.max(3,Math.min(22,Math.round(dly(TODAY)/60*2)/2));go(1);}}],
+ note(){const T=V.T;return "One cycle ≈ 2 × "+T+" min (signals) + "+DR+" min (drive) + "+REV+" min (review) = "+(2*T+DR+REV)+" minutes. A live joystick would add the full round trip to every single move.";},
+ step(dt){B.t+=dt;},
+ draw(){
+  const T=V.T,tot=2*T+DR+REV,tr=((B.t%24)/24)*tot,cur=stepAt(tr,T);
+  g.strokeStyle="rgba(255,255,255,.25)";g.setLineDash([5,6]);g.beginPath();g.moveTo(100,70);g.lineTo(700,70);g.stroke();g.setLineDash([]);
+  g.fillStyle="#2a6fb8";g.beginPath();g.arc(70,70,28,0,TAU);g.fill();txt("Earth",70,118,"#fff","13px system-ui","center");
+  g.fillStyle="#d1603d";g.beginPath();g.arc(730,70,22,0,TAU);g.fill();txt("Mars",730,112,"#fff","13px system-ui","center");
+  if(tr<T){const x=100+600*tr/T;g.fillStyle="#ffe08a";g.beginPath();g.arc(x,70,6,0,TAU);g.fill();txt("command →",x,54,"#ffe08a","12px system-ui","center");}
+  const r0=T+DR;if(tr>=r0&&tr<r0+T){const x=700-600*(tr-r0)/T;g.fillStyle="#7dd8ff";g.beginPath();g.arc(x,70,6,0,TAU);g.fill();txt("← results",x,54,"#7dd8ff","12px system-ui","center");}
+  txt("Mission clock: "+fm(tr*60),300,30,"#fff","600 15px system-ui");
+  STP.forEach((s,i)=>{const y=160+i*50,on=i===cur;g.fillStyle=on?"rgba(240,138,44,.9)":"rgba(255,255,255,.07)";g.fillRect(16,y,300,42);txt((i+1)+". "+s[0],26,y+17,on?"#120a02":"#fff","600 13px system-ui");txt(s[1].length>46?s[1].slice(0,44)+"…":s[1],26,y+34,on?"#120a02":"#9aa2c2","11px system-ui");});
+  const gx=335,gy=290,gw=450,gh=170;g.fillStyle="#3b1f1a";g.fillRect(gx,160,gw,gh+10);g.fillStyle="#7a3b26";g.fillRect(gx,gy,gw,gh-10+20);
+  g.fillStyle="#c97b52";g.fillRect(gx,gy,gw,6);
+  const p=Math.max(0,Math.min(1,(tr-T)/DR)),rx=gx+30+330*p,rk=gx+30+330*.51,by=gy+80;
+  g.fillStyle="#6b6b73";g.beginPath();g.arc(rk,by+4,16,Math.PI,TAU);g.fill();txt("rock",rk,by+22,"#cfcfd6","11px system-ui","center");
+  let dy=0;if(p>.4&&p<.62)dy=-34*Math.sin(Math.PI*(p-.4)/.22);
+  const ry=by-8+dy;g.fillStyle="#e9edf5";g.fillRect(rx-16,ry-14,32,14);g.fillStyle="#222";for(const o of [-12,0,12]){g.beginPath();g.arc(rx+o,ry+2,4,0,TAU);g.fill();}
+  g.strokeStyle="#e9edf5";g.lineWidth=2;g.beginPath();g.moveTo(rx+6,ry-14);g.lineTo(rx+6,ry-26);g.stroke();
+  if(cur===3)txt("Obstacle detected: choosing a path on its own",gx+gw/2,190,"#ffe08a","600 14px system-ui","center");
+  else if(cur===2)txt("Driving and imaging…",gx+gw/2,190,"#fff","13px system-ui","center");
+  else if(cur===1)txt("Command received!",gx+gw/2,190,"#9dffc4","600 14px system-ui","center");
+  else if(cur===5)txt("Earth team reviewing the data, planning next commands",gx+gw/2,190,"#9dffc4","13px system-ui","center");
+  else txt("Rover waiting for its next command",gx+gw/2,190,"#9aa2c2","13px system-ui","center");
+ }};
+
+/* scene 3 */
+const J={t:0,mode:0,stopAt:null,crash:false,done:false},VS=.04,CL=100,SIGHT=20;
+function jr(){J.t=0;J.stopAt=null;J.crash=false;J.done=false;}
+const xAt=t=>Math.min(CL,VS*Math.min(Math.max(t,0),J.stopAt===null?1e9:J.stopAt));
+const s3={name:"3. Why a live joystick fails",
+ text:"The rover drives at 0.04 m/s toward a cliff it can see 20 m ahead. In joystick mode you must press STOP when you see the cliff, but your picture is already one-way-delay old and your command takes another one-way delay to arrive.",
+ ctl:[{id:"T",label:"One-way delay (minutes)",min:1,max:22,step:.5,val:12.5},{id:"ts",label:"Time speed (real seconds per second)",min:30,max:400,step:10,val:120},
+  {btn:"Joystick mode",on:()=>J.mode===0,fn:()=>{J.mode=0;jr();go(2);}},{btn:"Rover autonomy mode",on:()=>J.mode===1,fn:()=>{J.mode=1;jr();go(2);}},{btn:"🛑 STOP!",fn:()=>{if(J.mode===0&&J.stopAt===null&&!J.done)J.stopAt=J.t+V.T*60;}},{btn:"Restart",fn:jr}],
+ note(){const Td=V.T*60,m=2*Td*VS;return "After the cliff first comes into view you have "+SIGHT+" m. Your picture is "+V.T+" min old and your STOP needs another "+V.T+" min, so the rover drives about "+m.toFixed(1)+" m more. "+(m<SIGHT?"That is within the margin.":"That is more than the margin: a joystick cannot work here.")+(J.mode===1?" In autonomy mode the rover brakes by itself.":"");},
+ step(dt){if(J.done)return;J.t+=dt*V.ts;if(J.mode===1&&J.stopAt===null&&VS*J.t>=CL-5)J.stopAt=J.t;const x=xAt(J.t);if(x>=CL&&!(J.stopAt!==null&&VS*J.stopAt<CL)){J.crash=true;J.done=true;}else if(J.stopAt!==null&&J.t>=J.stopAt)J.done=true;},
+ draw(){
+  const L=60,k=6.5,Td=V.T*60,x=xAt(J.t),xe=xAt(J.t-Td);
+  const lane=(y,label,pos,col)=>{g.fillStyle="#3b1f1a";g.fillRect(L,y,CL*k,46);g.fillStyle="#7a3b26";g.fillRect(L,y+22,CL*k,24);g.fillStyle="#000";g.fillRect(L+CL*k,y,W-L-CL*k,46+8);
+   g.strokeStyle="#ff5a4a";g.lineWidth=3;g.beginPath();g.moveTo(L+CL*k,y);g.lineTo(L+CL*k,y+46);g.stroke();
+   g.setLineDash([3,4]);g.strokeStyle="rgba(255,255,255,.5)";g.lineWidth=1;g.beginPath();g.moveTo(L+(CL-SIGHT)*k,y);g.lineTo(L+(CL-SIGHT)*k,y+46);g.stroke();g.setLineDash([]);
+   g.fillStyle=col;g.fillRect(L+pos*k-14,y+8,28,14);g.fillStyle="#222";g.beginPath();g.arc(L+pos*k-8,y+25,4,0,TAU);g.arc(L+pos*k+8,y+25,4,0,TAU);g.fill();txt(label,L,y-8,"#fff","600 14px system-ui");};
+  lane(90,"Mars: what is really happening",J.crash?CL-.5:x,J.crash?"#ff6a5a":"#e9edf5");
+  lane(230,"Earth screen: what you see ("+V.T+" min old)",xe,"#9ad0ff");
+  txt("cliff",L+CL*k-12,84,"#ff8a7a","12px system-ui","right");txt("sees cliff here",L+(CL-SIGHT)*k,84,"#cfd3e6","11px system-ui","center");
+  txt("Mission time: "+fm(J.t),60,34,"#fff","600 15px system-ui");
+  const seen=xe>=CL-SIGHT;
+  if(J.mode===0&&seen&&J.stopAt===null&&!J.done)txt("The cliff is visible on Earth! Press STOP now.",60,330,"#ffe08a","600 16px system-ui");
+  if(J.stopAt!==null&&!J.done&&J.mode===0)txt("STOP sent, arriving in "+fm(J.stopAt-J.t),60,330,"#ffe08a","600 15px system-ui");
+  if(J.done)txt(J.crash?"Rover lost: it drove off the cliff before STOP arrived.":"Rover stopped "+(CL-x).toFixed(1)+" m before the cliff.",60,330,J.crash?"#ff8a7a":"#9dffc4","600 16px system-ui");
+  else if(J.mode===0&&!seen)txt("Rover is driving… watch the Earth screen.",60,330,"#9aa2c2","14px system-ui");
+ }};
+
+/* shell */
+const scenes=[s1,s2,s3],tabs=$("tabs");
+["Orbits and delay","Command cycle","Joystick test"].forEach((n,i)=>{const b=document.createElement("button");b.textContent=(i+1)+". "+n;b.onclick=()=>go(i);tabs.appendChild(b);});
+const pb=document.createElement("button");pb.textContent=paused?"Resume":"Pause";pb.setAttribute("aria-pressed",paused);pb.onclick=()=>{paused=!paused;pb.setAttribute("aria-pressed",paused);pb.textContent=paused?"Resume":"Pause";};tabs.appendChild(pb);
+function go(i){
+ sc=i;const s=scenes[i];[...tabs.children].forEach((b,j)=>{if(j<3)b.setAttribute("aria-pressed",j===i);});
+ $("st").textContent=s.name;$("cap").textContent=s.text;const ctl=$("ctl");ctl.innerHTML="";let row=null;
+ s.ctl.forEach(c=>{if(c.btn){if(!row){row=document.createElement("div");row.className="btns";ctl.appendChild(row);}const b=document.createElement("button");b.textContent=c.btn;if(c.on)b.setAttribute("aria-pressed",c.on());b.onclick=()=>{c.fn();if(paused)render();};row.appendChild(b);}
+  else{const l=document.createElement("label"),o=document.createElement("b"),r=document.createElement("input");r.type="range";r.min=c.min;r.max=c.max;r.step=c.step;r.value=V[c.id];o.textContent=" "+r.value;l.append(c.label+":",o,r);r.oninput=()=>{V[c.id]=+r.value;o.textContent=" "+r.value;if(paused)render();};ctl.insertBefore(l,row);}});
+ render();
+}
+function render(){g.clearRect(0,0,W,H);const s=scenes[sc];s.draw();$("note").textContent=s.note();}
+function loop(ts){const dt=Math.min(.05,(ts-last)/1000);last=ts;if(!paused){const s=scenes[sc];if(s.step)s.step(dt);render();}requestAnimationFrame(loop);}
+go(0);requestAnimationFrame(loop);
+</script>
+</body>
+</html>

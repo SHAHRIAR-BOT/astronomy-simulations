@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Extensive Air Shower Simulation</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070c1a;--panel:#0f1730;--ink:#e8edf8;--mute:#8d9ab8;--line:#24305a;--p:#ffffff;--h:#ffb454;--e:#5cc8ff;--m:#7be08a;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;line-height:1.5}
+.wrap{max-width:1000px;margin:0 auto;padding:16px}
+h1{font-size:1.4rem;margin:4px 0 2px}
+p.sub{margin:0 0 12px;color:var(--mute);font-size:.92rem;max-width:62ch}
+.stage{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+canvas{display:block;width:100%;height:min(66vh,520px)}
+.ctrl{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:end;margin:12px 0}
+label{display:flex;flex-direction:column;font-size:.8rem;color:var(--mute);gap:4px}
+select,input[type=range]{accent-color:var(--e)}
+select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit}
+button{background:var(--e);color:#04121c;border:0;border-radius:6px;padding:9px 18px;font:600 .95rem inherit;font-family:inherit;cursor:pointer}
+button.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--h);outline-offset:2px}
+.stats{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:.9rem;margin-bottom:10px}
+.stats b{font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.85rem;color:var(--mute)}
+.legend i{display:inline-block;width:18px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.note{margin-top:12px;font-size:.88rem;color:var(--mute);max-width:70ch}
+
+  /* Mobile Touch Responsiveness Enhancement */
+  canvas { touch-action: pan-y; }
+  body { -webkit-overflow-scrolling: touch; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Extensive air shower</h1>
+<p class="sub">A cosmic ray hits the upper atmosphere, collides with an air nucleus, and the secondary particles multiply. Only muons survive to the ground tanks.</p>
+<div class="stage"><canvas id="cv" aria-label="Air shower side view"></canvas></div>
+<div class="ctrl">
+<label>Primary<select id="type"><option value="proton">Proton</option><option value="iron">Iron nucleus</option></select></label>
+<label>Energy: <span id="eout">10^18 eV</span><input id="en" type="range" min="15" max="20" step="0.5" value="18"></label>
+<label>Speed<input id="sp" type="range" min="0.2" max="2" step="0.1" value="1"></label>
+<button id="fire">Fire a cosmic ray</button>
+<button id="again" class="alt">Same settings, new shower</button>
+</div>
+<div class="stats">
+<span>Particles drawn: <b id="s1">0</b></span>
+<span>Muons at ground: <b id="s2">0</b></span>
+<span>Tanks triggered: <b id="s3">0</b>/41</span>
+</div>
+<div class="legend">
+<span><i style="background:var(--p)"></i>Primary cosmic ray</span>
+<span><i style="background:var(--h)"></i>Hadrons (pions, nucleons)</span>
+<span><i style="background:var(--e)"></i>Photons and electrons</span>
+<span><i style="background:var(--m)"></i>Muons</span>
+</div>
+<p class="note">Try raising the energy: the shower grows wider and has far more particles. Iron nuclei interact higher up and make relatively more muons than protons of the same energy. This is a simplified toy model, not a full Monte Carlo.</p>
+</div>
+<script>
+(function(){
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var W=0,H=0,GY=0.88,N=41,segs=[],T=0,Tmax=0,done=true,tanks=[],last=0,muons=0;
+var $=function(i){return document.getElementById(i)};
+function resize(){var r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;cv.width=r.width*d;cv.height=r.height*d;W=r.width;H=r.height;ctx.setTransform(d,0,0,d,0,0);draw()}
+function rnd(){return Math.random()}
+function build(){
+ segs=[];tanks=new Array(N).fill(0);muons=0;T=0;
+ var logE=+$('en').value,iron=$('type').value==='iron';
+ var maxGen=Math.max(3,Math.min(9,Math.round(2+(logE-14)*0.95)-(iron?1:0)));
+ var y1=(iron?0.07:0.12)+rnd()*0.04,th0=(rnd()-.5)*0.2;
+ var xs=-Math.sin(th0)*y1/Math.cos(th0);
+ var x1=0,t=0;
+ function add(x,y,th,L,t0,k,g){
+  var x2=x+Math.sin(th)*L,y2=y+Math.cos(th)*L,gr=false;
+  if(y2>=GY){var f=(GY-y)/(y2-y);x2=x+(x2-x)*f;y2=GY;L*=f;gr=true}
+  segs.push({x1:x,y1:y,x2:x2,y2:y2,t0:t0,t1:t0+L,k:k,g:gr&&(k==='m'||k==='h'),d:false});
+  return {x:x2,y:y2,t:t0+L,gr:gr};
+ }
+ var p=add(xs,0,th0,y1/Math.cos(th0),0,'p');
+ function em(x,y,th,t0,d){
+  var r=add(x,y,th,0.02+rnd()*0.03,t0,'e');
+  if(r.gr||d>=2)return;
+  em(r.x,r.y,th-0.04-rnd()*0.06,r.t,d+1);em(r.x,r.y,th+0.04+rnd()*0.06,r.t,d+1);
+ }
+ function had(x,y,th,t0,g){
+  var r=add(x,y,th,0.015+(-Math.log(1-rnd()))*0.05,t0,'h');
+  if(r.gr)return;
+  if(g>=maxGen){
+   if(rnd()<(iron?0.8:0.6)){add(r.x,r.y,th+(rnd()-.5)*0.1,2,r.t,'m')}
+   return;
+  }
+  em(r.x,r.y,th+(rnd()-.5)*0.1,r.t,0);
+  var sp=0.5/(1+g*0.3);
+  had(r.x,r.y,th+(rnd()-.5)*sp,r.t,g+1);
+  had(r.x,r.y,th+(rnd()-.5)*sp,r.t,g+1);
+ }
+ had(p.x,p.y,th0,p.t,0);
+ Tmax=0;for(var i=0;i<segs.length;i++)if(segs[i].t1>Tmax)Tmax=segs[i].t1;
+ done=false;last=performance.now();requestAnimationFrame(loop);
+}
+function px(x){return W/2+x*H}
+function draw(){
+ var g=ctx.createLinearGradient(0,0,0,H);
+ g.addColorStop(0,'#04060f');g.addColorStop(.6,'#0d1a3a');g.addColorStop(GY/1,'#1d3a63');g.addColorStop(1,'#101a2c');
+ ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ var gy=GY*H;
+ ctx.fillStyle='#0b1220';ctx.fillRect(0,gy,W,H-gy);
+ ctx.strokeStyle='#2b4672';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();
+ ctx.fillStyle='#8d9ab8';ctx.font='12px IBM Plex Sans, sans-serif';
+ ctx.fillText('Space',10,16);ctx.fillText('Upper atmosphere',10,32);ctx.fillText('Ground detector array',10,H-8);
+ var sp=W*0.92/N,x0=W*0.04;
+ var counts=0;
+ for(var i=0;i<segs.length;i++){
+  var s=segs[i];
+  if(s.t0>=T&&T>0)continue;
+  if(T===0&&!done&&segs.length&&false)continue;
+  var f=T>=s.t1?1:Math.max(0,(T-s.t0)/(s.t1-s.t0));
+  if(T===0&&done)f=1;
+  if(f<=0)continue;
+  counts++;
+  var ex=s.x1+(s.x2-s.x1)*f,ey=s.y1+(s.y2-s.y1)*f;
+  var age=T-s.t1,a=1;
+  if(age>0)a=Math.max(0.2,1-age*1.5);
+  var col=s.k==='p'?'255,255,255':s.k==='h'?'255,180,84':s.k==='e'?'92,200,255':'123,224,138';
+  ctx.strokeStyle='rgba('+col+','+(s.k==='e'?a*0.7:a)+')';
+  ctx.lineWidth=s.k==='p'?2.4:s.k==='m'?1.2:s.k==='h'?1.3:0.8;
+  ctx.beginPath();ctx.moveTo(px(s.x1),s.y1*H);ctx.lineTo(px(ex),ey*H);ctx.stroke();
+  if(s.g&&!s.d&&T>=s.t1){
+   s.d=true;
+   var idx=Math.round((px(s.x2)-x0-sp/2)/sp);
+   if(idx>=0&&idx<N){tanks[idx]++;if(s.k==='m')muons++}
+  }
+ }
+ if(segs.length){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(px(segs[1]?segs[1].x1:0),(segs[1]?segs[1].y1:0)*H,4,0,6.3);ctx.fill();
+  if(T>segs[1].t0){ctx.fillStyle='#e8edf8';ctx.fillText('First collision',px(segs[1].x1)+10,segs[1].y1*H+4)}}
+ var trig=0;
+ for(var j=0;j<N;j++){
+  var c=tanks[j];if(c>0)trig++;
+  var b=Math.min(1,c/3);
+  ctx.fillStyle=c?'rgba(123,224,138,'+(0.35+0.65*b)+')':'#1a2742';
+  ctx.fillRect(x0+j*sp+1,gy+6,sp-2,12);
+ }
+ $('s1').textContent=counts;$('s2').textContent=muons;$('s3').textContent=trig;
+}
+function loop(now){
+ var dt=Math.min(0.05,(now-last)/1000);last=now;
+ T+=dt*0.45*(+$('sp').value);
+ if(T>=Tmax+0.15){T=Tmax+0.15;done=true}
+ draw();
+ if(!done)requestAnimationFrame(loop);
+}
+$('en').addEventListener('input',function(){$('eout').textContent='10^'+(+this.value).toString().replace('.5','.5')+' eV'});
+$('fire').addEventListener('click',build);
+$('again').addEventListener('click',build);
+window.addEventListener('resize',resize);
+resize();build();
+})();
+</script>
+</body>
+</html>
