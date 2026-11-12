@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Secondary Astrophysics &amp; Relativity Simulations</title>
+  <style>
+    :root {
+      --bg: #070a13;
+      --card-bg: rgba(18, 25, 43, 0.75);
+      --card-border: rgba(70, 95, 145, 0.25);
+      --card-hover: rgba(130, 100, 240, 0.45);
+      --text: #f0f4fc;
+      --text-muted: #8e9bb5;
+      --accent: #7c8cff;
+      --accent-glow: rgba(124, 140, 255, 0.3);
+      --tag-bg: rgba(124, 140, 255, 0.14);
+      --tag-border: rgba(124, 140, 255, 0.35);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      background-image: 
+        radial-gradient(ellipse at 20% 10%, rgba(55, 50, 140, 0.32) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(130, 45, 130, 0.24) 0%, transparent 50%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      min-height: 100vh;
+      padding: max(24px, env(safe-area-inset-top)) 16px 48px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+      padding: 10px 0;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: clamp(24px, 5vw, 36px);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #ffffff 30%, #b5bfff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p.lead {
+      color: var(--text-muted);
+      font-size: clamp(14px, 2.5vw, 16px);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--card-hover);
+      box-shadow: 0 10px 28px -8px var(--accent-glow);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .sim-tag {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+      background: var(--tag-bg);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .sim-icon {
+      font-size: 20px;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      line-height: 1.35;
+    }
+    p.desc {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 20px;
+      flex-grow: 1;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: #1f254a;
+      border: 1px solid rgba(124, 140, 255, 0.35);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .card:hover .btn {
+      background: #2f3a78;
+      border-color: var(--accent);
+    }
+    footer {
+      text-align: center;
+      margin-top: 48px;
+      font-size: 13px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--card-border);
+      padding-top: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">📖 Secondary Book Companion</div>
+      <h1>Secondary Astrophysics Simulations</h1>
+      <p class="lead">All interactive relativity, gravitational lensing, and high-energy astrophysics simulations for the Secondary category.</p>
+    </header>
+
+    <div class="grid">
+      <!-- 1 -->
+      <a href="cherenkov-radiation.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Secondary</span>
+            <span class="sim-icon">🧊</span>
+          </div>
+          <h2>Cherenkov Radiation in Ice</h2>
+          <p class="desc">Neutrino collisions in Antarctic ice producing faster-than-light-in-medium optical shockwaves.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 2 -->
+      <a href="einstein-cross.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Secondary</span>
+            <span class="sim-icon">✝️</span>
+          </div>
+          <h2>Einstein Cross Simulator</h2>
+          <p class="desc">Quadruple gravitational mirage imaging of distant quasars curved by foreground galaxies.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 3 -->
+      <a href="einstein-ring.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Secondary</span>
+            <span class="sim-icon">⭕</span>
+          </div>
+          <h2>Einstein Ring Visualizer</h2>
+          <p class="desc">Symmetric gravitational deflection forming complete optical rings around massive lensing bodies.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 4 -->
+      <a href="air-shower.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Secondary</span>
+            <span class="sim-icon">⚡</span>
+          </div>
+          <h2>Extensive Air Shower</h2>
+          <p class="desc">Ultra-high-energy cosmic ray atmospheric collisions triggering relativistic particle cascades.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 5 -->
+      <a href="gravitational-time-dilation.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Secondary</span>
+            <span class="sim-icon">⏳</span>
+          </div>
+          <h2>Gravitational Time Dilation</h2>
+          <p class="desc">General relativity: clock slowing in intense gravitational potentials near compact objects.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 6 -->
+      <a href="grb-simulation.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Secondary</span>
+            <span class="sim-icon">💥</span>
+          </div>
+          <h2>Gamma-Ray Bursts Simulator</h2>
+          <p class="desc">Hypernova core collapse and relativistic beamed jets across cosmic distances.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 7 -->
+      <a href="length-contraction.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Secondary</span>
+            <span class="sim-icon">📏</span>
+          </div>
+          <h2>Length Contraction Visualizer</h2>
+          <p class="desc">Special relativity: Lorentz spatial contraction along the direction of relativistic motion.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 8 -->
+      <a href="lorentz-factor.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Secondary</span>
+            <span class="sim-icon">📈</span>
+          </div>
+          <h2>Lorentz Factor Visualizer</h2>
+          <p class="desc">Interactive gamma factor curves approaching asymptotic infinity as velocity approaches c.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 9 -->
+      <a href="microlensing.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Secondary</span>
+            <span class="sim-icon">🔍</span>
+          </div>
+          <h2>Gravitational Microlensing</h2>
+          <p class="desc">Transient stellar magnification and exoplanet detection through gravitational light amplification.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 10 -->
+      <a href="relativistic-kinetic-energy.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Secondary</span>
+            <span class="sim-icon">⚡</span>
+          </div>
+          <h2>Relativistic Kinetic Energy</h2>
+          <p class="desc">Comparison of classical Newtonian 1/2mv&sup2; vs Einsteinian relativistic energy curves.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 11 -->
+      <a href="relativistic-momentum.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Secondary</span>
+            <span class="sim-icon">🚀</span>
+          </div>
+          <h2>Classical vs Relativistic Momentum</h2>
+          <p class="desc">Momentum divergence at high speeds preventing any massive particle from reaching light speed.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+
+      <!-- 12 -->
+      <a href="time-dilation-graph.html" class="card">
+        <div>
+          <div class="card-top">
+            <span class="sim-tag">Secondary</span>
+            <span class="sim-icon">⌛</span>
+          </div>
+          <h2>Time Dilation Visualizer</h2>
+          <p class="desc">Special relativity: twin paradox and moving clock time slowing curves.</p>
+        </div>
+        <div class="btn">Launch Simulation 🚀</div>
+      </a>
+    </div>
+
+    <footer>
+      <p>Secondary Astrophysics Book Series &bull; Interactive Directory &bull; Mobile &amp; Desktop Ready</p>
+    </footer>
+  </div>
+</body>
+</html>
